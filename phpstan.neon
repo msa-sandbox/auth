@@ -1,0 +1,13 @@
+parameters:
+  level: 4
+  fileExtensions:
+    - php
+  excludePaths:
+    analyse:
+      - */vendor/*
+    analyseAndScan:
+      - */cache/*
+      - */doc*/
+      - */docker/*
+  paths:
+    - src
