@@ -84,8 +84,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setRoles(array $roles): self
     {
-        // Not sure about this, but let's use role_user as default role for everyone
-        if (!in_array(Roles::ROLE_USER, $roles, true)) {
+        // Not sure about this, but let's use role_user as a default role for everyone
+        if (!$roles) {
             $roles[] = Roles::ROLE_USER;
         }
         $this->roles = array_unique($roles);

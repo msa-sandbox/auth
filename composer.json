@@ -13,6 +13,7 @@
     "doctrine/orm": "^3.5",
     "enqueue/rdkafka": "^0.10.26",
     "lexik/jwt-authentication-bundle": "^3.1",
+    "nelmio/cors-bundle": "^2.5",
     "symfony/cache": "7.3.*",
     "symfony/console": "7.3.*",
     "symfony/dotenv": "7.3.*",

@@ -18,11 +18,6 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
         parent::__construct($registry, User::class);
     }
 
-    /**
-     * @param string $email
-     *
-     * @return User|null
-     */
     public function findByEmail(string $email): ?User
     {
         return $this->createQueryBuilder('u')
@@ -30,5 +25,13 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
             ->setParameter('email', $email)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    public function save(User $user): void
+    {
+        $em = $this->getEntityManager();
+
+        $em->persist($user);
+        $em->flush();
     }
 }

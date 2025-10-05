@@ -25,6 +25,17 @@ services:
     resource: '../src/Http/Middleware/*'
     public: true
 
+
+  # Set a couple Kernel listeners
+  App\Http\EventListener\ExceptionListener:
+    tags:
+      - { name: kernel.event_listener, event: kernel.exception }
+
+  App\Http\EventListener\ResponseListener:
+    tags:
+      - { name: kernel.event_listener, event: kernel.view }
+
+
   # Bindings
   # It is always better to do it dynamically, but since we have very small service, it is ok
   App\Repository\UserRepositoryInterface: '@App\Repository\UserRepository'
