@@ -8,25 +8,24 @@ security:
       entity:
         class: App\Entity\User
         property: email
+
   firewalls:
-#    dev:
-#      pattern: ^/(_(profiler|wdt)|css|images|js)/
-#      security: false
-    main:
-      lazy: true
+    # отдельного dev-файрвола не нужно
+    web:
+      pattern: ^/web/
+      stateless: true
       provider: app_user_provider
-
-      # activate different ways to authenticate
-      # https://symfony.com/doc/current/security.html#the-firewall
-
-      # https://symfony.com/doc/current/security/impersonating_user.html
-      # switch_user: true
-
-  # Easy way to control access for large sections of your site
-  # Note: Only the *first* access control that matches will be used
+      json_login:
+        check_path: /web/login
+        username_path: email
+        password_path: password
+      custom_authenticators:
+        - App\Security\JwtAuthenticator
   access_control:
-#   - { path: ^/web, roles: ROLE_WEB_USER }
-#   - { path: ^/api, roles: ROLE_API_USER }
+    - { path: ^/health$, roles: PUBLIC_ACCESS }
+#    - { path: ^/web/admin, roles: ROLE_ADMIN }
+#    - { path: ^/web, roles: ROLE_WEB_USER }
+#    - { path: ^/api, roles: ROLE_API_USER }
   role_hierarchy:
     ROLE_ADMIN: [ ROLE_WEB_USER, ROLE_API_USER ]
     ROLE_WEB_USER: [ ROLE_USER ]

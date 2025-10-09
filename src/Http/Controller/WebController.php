@@ -9,6 +9,7 @@ use App\Security\Roles;
 use App\Service\UsersService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/web')]
 readonly class WebController
@@ -18,13 +19,14 @@ readonly class WebController
     }
 
     #[Route('/users', methods: ['GET'])]
-    //    #[IsGranted('ROLE_USER')]
+    #[IsGranted('ROLE_USER')]
     public function getUsers(Request $request, UsersService $service): ApiResponse
     {
         return ApiResponse::success($service->getAllUsers());
     }
 
     #[Route('/users/{id}/roles', requirements: ['id' => '\d+'], methods: ['PUT'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function setUserRole(Request $request, UsersService $service, int $id): ApiResponse
     {
         $data = $request->getPayload()->all();
@@ -40,7 +42,7 @@ readonly class WebController
     }
 
     #[Route('/users/roles', methods: ['GET'])]
-    //    #[IsGranted('ROLE_USER')]
+    #[IsGranted('ROLE_USER')]
     public function getUserRoles(Request $request): ApiResponse
     {
         return ApiResponse::success(Roles::ALL_ROLES);

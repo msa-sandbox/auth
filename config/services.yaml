@@ -13,6 +13,7 @@ services:
     resource: '../src/'
     exclude:
       - '../src/Entity/'
+      - '../src/Security/Dto/*'
 
   # Controllers must be public
   App\Http\Controller\:
@@ -38,4 +39,5 @@ services:
 
   # Bindings
   # It is always better to do it dynamically, but since we have very small service, it is ok
-  App\Repository\UserRepositoryInterface: '@App\Repository\UserRepository'
+  App\Repository\UserRepositoryInterface:         '@App\Repository\UserRepository'
+  App\Repository\RefreshTokenRepositoryInterface: '@App\Repository\RefreshTokenRepository'
