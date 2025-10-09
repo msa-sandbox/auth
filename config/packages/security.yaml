@@ -23,6 +23,8 @@ security:
         - App\Security\JwtAuthenticator
   access_control:
     - { path: ^/health$, roles: PUBLIC_ACCESS }
+    - { path: ^/web/refresh, roles: PUBLIC_ACCESS }
+    - { path: ^/web/logout, roles: PUBLIC_ACCESS }
 #    - { path: ^/web/admin, roles: ROLE_ADMIN }
 #    - { path: ^/web, roles: ROLE_WEB_USER }
 #    - { path: ^/api, roles: ROLE_API_USER }

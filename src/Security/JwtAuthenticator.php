@@ -27,7 +27,7 @@ class JwtAuthenticator extends AbstractAuthenticator
         $path = $request->getPathInfo();
 
         // Exclude login route
-        if (str_starts_with($path, '/web/login')) {
+        if (str_starts_with($path, '/web/login') || str_starts_with($path, '/web/refresh')) {
             return false;
         }
 
