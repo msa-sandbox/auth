@@ -15,7 +15,7 @@ use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Uid\Uuid;
 
-final readonly class AuthService
+readonly class AuthService
 {
     public function __construct(
         private JWTTokenManagerInterface $jwt,

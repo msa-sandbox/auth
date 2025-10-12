@@ -11,7 +11,7 @@ use RdKafka\ProducerTopic;
 use RuntimeException;
 use Throwable;
 
-final readonly class KafkaProducer
+readonly class KafkaProducer
 {
     private Producer $producer;
     private ProducerTopic $topic;

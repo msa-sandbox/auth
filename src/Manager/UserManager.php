@@ -7,7 +7,7 @@ namespace App\Manager;
 use App\Entity\User;
 use App\Repository\UserRepositoryInterface;
 
-final readonly class UserManager
+readonly class UserManager
 {
     public function __construct(
         private UserRepositoryInterface $repository,

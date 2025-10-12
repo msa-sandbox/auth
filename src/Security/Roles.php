@@ -7,7 +7,7 @@ namespace App\Security;
 use App\Enum\Permission;
 use Symfony\Component\Security\Core\Role\RoleHierarchyInterface;
 
-final readonly class Roles
+readonly class Roles
 {
     public function __construct(
         private RoleHierarchyInterface $roleHierarchy

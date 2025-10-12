@@ -12,7 +12,7 @@ use App\Security\Roles;
 use DateTimeImmutable;
 use LogicException;
 
-final readonly class UsersService
+readonly class UsersService
 {
     public function __construct(
         private UserRepositoryInterface $repository,

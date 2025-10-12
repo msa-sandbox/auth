@@ -5,9 +5,10 @@ framework:
   # Note that the session will be started ONLY if you read or write from it.
   session: true
 
-# Not required since I do not have webTestCase?
 when@test:
   framework:
     test: true
+    http_method_override: true
+    trusted_headers: ['authorization']
     session:
       storage_factory_id: session.storage.factory.mock_file

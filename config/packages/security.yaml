@@ -10,7 +10,6 @@ security:
         property: email
 
   firewalls:
-    # отдельного dev-файрвола не нужно
     web:
       pattern: ^/web/
       stateless: true
@@ -25,6 +24,7 @@ security:
     - { path: ^/health$, roles: PUBLIC_ACCESS }
     - { path: ^/web/refresh, roles: PUBLIC_ACCESS }
     - { path: ^/web/logout, roles: PUBLIC_ACCESS }
+    - { path: ^/web/login, roles: PUBLIC_ACCESS }
 #    - { path: ^/web/admin, roles: ROLE_ADMIN }
 #    - { path: ^/web, roles: ROLE_WEB_USER }
 #    - { path: ^/api, roles: ROLE_API_USER }

@@ -10,14 +10,12 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-class AuthController
+readonly class AuthController
 {
-    public function __construct(
-    ) {
-    }
-
     #[Route('/web/login', methods: ['POST'])]
+    #[isGranted('PUBLIC_ACCESS')]
     public function login(Request $request, AuthService $authService): JsonResponse|ApiResponse
     {
         $data = $request->toArray();
