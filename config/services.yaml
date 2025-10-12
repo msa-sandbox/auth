@@ -14,6 +14,7 @@ services:
     exclude:
       - '../src/Entity/'
       - '../src/Security/Dto/*'
+      - '../src/Infrastructure/Kafka/Dto/*'
 
   # Controllers must be public
   App\Http\Controller\:
@@ -35,6 +36,17 @@ services:
   App\Http\EventListener\ResponseListener:
     tags:
       - { name: kernel.event_listener, event: kernel.view }
+
+  # Kafka
+  App\Infrastructure\Kafka\KafkaProducer:
+    arguments:
+      $brokers: '%env(KAFKA_BROKERS)%'
+      $topicName: '%env(KAFKA_TOPIC)%'
+  App\Command\KafkaConsumeCommand:
+    arguments:
+      $brokers: '%env(KAFKA_BROKERS)%'
+      $topicName: '%env(KAFKA_TOPIC)%'
+    tags: [ 'console.command' ]
 
 
   # Bindings

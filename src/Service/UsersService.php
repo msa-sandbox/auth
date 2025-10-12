@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\User;
+use App\Infrastructure\Kafka\KafkaProducer;
 use App\Manager\UserManager;
 use App\Repository\UserRepositoryInterface;
 use App\Security\Roles;
+use DateTimeImmutable;
 use LogicException;
 
 final readonly class UsersService
@@ -16,6 +18,7 @@ final readonly class UsersService
         private UserRepositoryInterface $repository,
         private UserManager $manager,
         private Roles $roles,
+        private KafkaProducer $kafkaProducer,
     ) {
     }
 
@@ -50,5 +53,27 @@ final readonly class UsersService
         $new = $this->roles->collapseRoles($newRoles);
 
         $this->manager->updateRoles($user, $new);
+
+        $this->fireRoleCHangedEvent($user, $new);
+    }
+
+    /**
+     * Create event within Kafka
+     *
+     * @param User $user
+     * @param array $newRoles
+     *
+     * @return void
+     */
+    private function fireRoleCHangedEvent(User $user, array $newRoles): void
+    {
+        $event = [
+            'event' => 'user.role.changed',
+            'user_id' => $user->getId(),
+            'new_roles' => $newRoles,
+            'changed_at' => (new DateTimeImmutable())->format(DATE_ATOM),
+        ];
+
+        $this->kafkaProducer->send($event);
     }
 }
