@@ -16,7 +16,7 @@ services:
     networks:
       - msa-network
       - default
-    user: "${UID}:${GID}"
+    user: "1000:1000"
     depends_on:
       - db
       - redis
@@ -65,3 +65,5 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
+    networks:
+      - default

@@ -30,17 +30,18 @@ readonly class KafkaProducer
 
     /**
      * @param array $payload
+     * @param int $conformationTime up to 5 sec
      *
      * @return void
      */
-    public function send(array $payload): void
+    public function send(array $payload, int $conformationTime = 2000): void
     {
         try {
             $json = json_encode($payload, JSON_THROW_ON_ERROR);
             $this->topic->produce(RD_KAFKA_PARTITION_UA, 0, $json);
 
             // Wait for confirmation
-            $result = $this->producer->flush(10000); // up to 10 seconds
+            $result = $this->producer->flush($conformationTime);
             if ($result !== RD_KAFKA_RESP_ERR_NO_ERROR) {
                 throw new RuntimeException('Kafka flush failed: ' . $result);
             }

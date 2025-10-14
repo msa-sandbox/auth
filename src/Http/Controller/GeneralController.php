@@ -6,12 +6,22 @@ namespace App\Http\Controller;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\Response;
 
 readonly class GeneralController
 {
     #[Route('/', methods: ['GET'])]
-    public function __invoke(): JsonResponse
+    public function root(): JsonResponse
     {
         return new JsonResponse(['message' => 'Hi. Nothing here']);
+    }
+
+    // We are not going to expose any endpoint, but the browser will argue about it
+    #[Route('/favicon.ico', name: 'app_favicon', methods: ['GET'])]
+    public function favicon(): Response
+    {
+        return new Response('', Response::HTTP_NO_CONTENT, [
+            'Content-Type' => 'image/x-icon',
+        ]);
     }
 }

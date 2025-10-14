@@ -22,12 +22,6 @@ services:
     tags: ['controller.service_arguments']
     public: true
 
-  # Middlewares must be public
-  App\Http\Middleware\:
-    resource: '../src/Http/Middleware/*'
-    public: true
-
-
   # Set a couple Kernel listeners
   App\Http\EventListener\ExceptionListener:
     tags:

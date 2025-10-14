@@ -12,6 +12,10 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Throwable;
 
+/**
+ * Possible statuses up, degraded, down.
+ * Since this is a very important service, we will use only UP/DOWN.
+ */
 readonly class HealthController
 {
     public function __construct(
@@ -20,25 +24,28 @@ readonly class HealthController
     ) {
     }
 
+    private const STATUS_UP = 'UP';
+    private const STATUS_DOWN = 'DOWN';
+
     #[Route('/health', methods: ['GET'])]
     #[IsGranted('PUBLIC_ACCESS')]
     public function __invoke(): JsonResponse
     {
         $status = [
-            'status' => 'ok',
+            'status' => self::STATUS_UP,
             'timestamp' => (new DateTimeImmutable())->format(DATE_ATOM),
             'checks' => [
-                'database' => 'ok',
-                'kafka' => 'ok',
+                'database' => self::STATUS_UP,
+                'kafka' => self::STATUS_UP,
             ],
         ];
 
         // 1. Check DB
         try {
             $this->db->executeQuery('SELECT 1');
-        } catch (Throwable $e) {
-            $status['status'] = 'degraded';
-            $status['checks']['database'] = 'fail: ' . $e->getMessage();
+        } catch (Throwable $exception) {
+            $status['status'] = self::STATUS_DOWN;
+            $status['checks']['database'] = self::STATUS_DOWN;
         }
 
         // 2. Check Kafka
@@ -47,12 +54,12 @@ readonly class HealthController
             $this->kafkaProducer->send([
                 'event' => 'health.check',
                 'timestamp' => time(),
-            ]);
-        } catch (Throwable $e) {
-            $status['status'] = 'degraded';
-            $status['checks']['kafka'] = 'fail: ' . $e->getMessage();
+            ], 500);
+        } catch (Throwable $exception) {
+            $status['status'] = self::STATUS_DOWN;
+            $status['checks']['kafka'] = self::STATUS_DOWN;
         }
 
-        return new JsonResponse($status, $status['status'] === 'ok' ? 200 : 503);
+        return new JsonResponse($status, $status['status'] === self::STATUS_UP ? 200 : 503);
     }
 }
