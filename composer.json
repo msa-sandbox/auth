@@ -22,6 +22,7 @@
     "symfony/flex": "^2.8.2",
     "symfony/framework-bundle": "7.3.*",
     "symfony/maker-bundle": "^1.64",
+    "symfony/monolog-bundle": "^3.10",
     "symfony/runtime": "7.3.*",
     "symfony/serializer": "7.3.*",
     "symfony/uid": "7.3.*",
