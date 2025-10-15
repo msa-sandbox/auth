@@ -14,17 +14,9 @@ security:
       pattern: ^/web/
       stateless: true
       provider: app_user_provider
-      json_login:
-        check_path: /web/login
-        username_path: email
-        password_path: password
       custom_authenticators:
         - App\Security\JwtAuthenticator
   access_control:
-    - { path: ^/health$, roles: PUBLIC_ACCESS }
-    - { path: ^/web/refresh, roles: PUBLIC_ACCESS }
-    - { path: ^/web/logout, roles: PUBLIC_ACCESS }
-    - { path: ^/web/login, roles: PUBLIC_ACCESS }
 #    - { path: ^/web/admin, roles: ROLE_ADMIN }
 #    - { path: ^/web, roles: ROLE_WEB_USER }
 #    - { path: ^/api, roles: ROLE_API_USER }

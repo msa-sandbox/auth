@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controller;
 
+use App\Http\Dto\LoginRequestDto;
 use App\Http\Response\ApiResponse;
 use App\Security\AuthService;
 use Symfony\Component\HttpFoundation\Cookie;
@@ -13,6 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\RateLimiter\RateLimiterFactory;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 readonly class AuthController
 {
@@ -25,14 +27,20 @@ readonly class AuthController
 
     #[Route('/web/login', methods: ['POST'])]
     #[isGranted('PUBLIC_ACCESS')]
-    public function login(Request $request, AuthService $authService): JsonResponse|ApiResponse
+    public function login(Request $request, ValidatorInterface $validator, AuthService $authService): JsonResponse|ApiResponse
     {
-        $data = $request->toArray();
-        if (!$data['email'] || !$data['password']) {
-            return ApiResponse::error('Missing email or password');
-        }
-        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            return ApiResponse::error('Invalid email format');
+        $dto = new LoginRequestDto(
+            email:    $request->get('email'),
+            password: $request->get('password')
+        );
+
+        $errors = $validator->validate($dto);
+        if (count($errors) > 0) {
+            $messages = [];
+            foreach ($errors as $error) {
+                $messages[$error->getPropertyPath()] = $error->getMessage();
+            }
+            return ApiResponse::error($messages, status: Response::HTTP_BAD_REQUEST);
         }
 
         // Rate limit per IP
@@ -43,14 +51,14 @@ readonly class AuthController
         }
 
         // Rate limit per user (email)
-        $userLimiter = $this->loginPerUserLimiter->create(strtolower($data['email']));
+        $userLimiter = $this->loginPerUserLimiter->create(strtolower($dto->getEmail()));
         $userLimit = $userLimiter->consume();
         if (!$userLimit->isAccepted()) {
             return ApiResponse::error('Too many login attempts for this account', status: Response::HTTP_TOO_MANY_REQUESTS);
         }
 
 
-        $authDto = $authService->login($data['email'], $data['password']);
+        $authDto = $authService->login($dto->getEmail(), $dto->getPassword());
 
         // Return refreshId within HttpOnly cookie
         $cookie = Cookie::create('refresh_id')
@@ -68,6 +76,7 @@ readonly class AuthController
     }
 
     #[Route('/web/refresh', methods: ['POST'])]
+    #[isGranted('PUBLIC_ACCESS')]
     public function refresh(Request $request, AuthService $authService): JsonResponse|ApiResponse
     {
         // Rate limit per IP
@@ -100,6 +109,7 @@ readonly class AuthController
     }
 
     #[Route('/web/logout', methods: ['POST'])]
+    #[isGranted('PUBLIC_ACCESS')]
     public function logout(Request $request, AuthService $authService): JsonResponse|ApiResponse
     {
         $refreshId = $request->cookies->get('refresh_id');

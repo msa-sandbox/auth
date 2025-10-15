@@ -13,6 +13,7 @@ services:
     resource: '../src/'
     exclude:
       - '../src/Entity/'
+      - '../src/Http/Dto/*'
       - '../src/Security/Dto/*'
       - '../src/Infrastructure/Kafka/Dto/*'
 

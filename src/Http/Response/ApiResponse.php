@@ -23,8 +23,12 @@ final readonly class ApiResponse
         return new self(true, $message, $data, null, $status);
     }
 
-    public static function error(string $message, array $errors = [], int $status = 400): self
+    public static function error(string|array $message, array $errors = [], int $status = 400): self
     {
+        if (is_array($message)) {
+            $message = implode(PHP_EOL, $message);
+        }
+
         return new self(false, $message, null, $errors, $status);
     }
 

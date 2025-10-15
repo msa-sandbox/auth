@@ -7,7 +7,9 @@ namespace App\Http\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[isGranted('PUBLIC_ACCESS')]
 readonly class GeneralController
 {
     #[Route('/', methods: ['GET'])]
@@ -16,7 +18,7 @@ readonly class GeneralController
         return new JsonResponse(['message' => 'Hi. Nothing here']);
     }
 
-    // We are not going to expose any endpoint, but the browser will argue about it
+    // We are not going to expose any endpoint, but the browser will argue about span within metrics
     #[Route('/favicon.ico', name: 'app_favicon', methods: ['GET'])]
     public function favicon(): Response
     {
