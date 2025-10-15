@@ -1,7 +1,7 @@
 artprima_prometheus_metrics:
   namespace: auth
   storage:
-    url: '%env(PROM_METRICS_DSN)%'
+    url: '%env(REDIS_URL)%'
     persistent_connections: true
 
   ignored_routes:

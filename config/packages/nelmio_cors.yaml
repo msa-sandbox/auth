@@ -4,13 +4,13 @@ nelmio_cors:
     allow_credentials: true
     allow_origin: [ '%env(CORS_ALLOW_ORIGIN)%' ]
     allow_methods: [ 'GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE' ]
-    allow_headers: [ 'Content-Type', 'Authorization' ]
+    allow_headers: [ 'Content-Type', 'Authorization', 'X-Requested-With' ]
 #    expose_headers: [ 'Link' ] -- Probably I don't need this?
     max_age: 86400
   paths:
     '^/web/':
       allow_origin: [ '%env(CORS_ALLOW_ORIGIN)%' ]
       allow_credentials: true
-      allow_headers: [ 'Content-Type', 'Authorization' ]
+      allow_headers: [ 'Content-Type', 'Authorization', 'X-Requested-With' ]
       allow_methods: [ 'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS' ]
       max_age: 86400
