@@ -7,9 +7,9 @@ namespace App\Tests\Integrational\Infrastructure;
 use App\Infrastructure\Kafka\KafkaProducer;
 use DateTimeImmutable;
 use Psr\Log\NullLogger;
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use RdKafka\Conf;
 use RdKafka\KafkaConsumer;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -59,7 +59,7 @@ final class KafkaIntegrationTest extends KernelTestCase
         // Configure Kafka consumer to read from the same topic
         $conf = new Conf();
         $conf->set('metadata.broker.list', $brokers);
-        $conf->set('group.id', 'phpunit-kafka-test-' . uniqid());
+        $conf->set('group.id', 'phpunit-kafka-test-'.uniqid());
         $conf->set('auto.offset.reset', 'earliest');
 
         $consumer = new KafkaConsumer($conf);
@@ -72,7 +72,7 @@ final class KafkaIntegrationTest extends KernelTestCase
         while (microtime(true) - $start < 10) {
             $message = $consumer->consume(1000);
 
-            if ($message->err === RD_KAFKA_RESP_ERR_NO_ERROR) {
+            if (RD_KAFKA_RESP_ERR_NO_ERROR === $message->err) {
                 $decoded = json_decode($message->payload, true, 512, JSON_THROW_ON_ERROR);
                 if (($decoded['test_id'] ?? null) === $payload['test_id']) {
                     $found = true;
@@ -93,10 +93,10 @@ final class KafkaIntegrationTest extends KernelTestCase
     private function isKafkaReachable(string $brokers): bool
     {
         $host = explode(':', $brokers)[0];
-        $port = (int)(explode(':', $brokers)[1] ?? 9092);
+        $port = (int) (explode(':', $brokers)[1] ?? 9092);
 
         $conn = @fsockopen($host, $port, $errno, $errstr, 1.0);
-        if ($conn === false) {
+        if (false === $conn) {
             return false;
         }
         fclose($conn);

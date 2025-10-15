@@ -60,6 +60,6 @@ readonly class HealthController
             $status['checks']['kafka'] = self::STATUS_DOWN;
         }
 
-        return new JsonResponse($status, $status['status'] === self::STATUS_UP ? 200 : 503);
+        return new JsonResponse($status, self::STATUS_UP === $status['status'] ? 200 : 503);
     }
 }

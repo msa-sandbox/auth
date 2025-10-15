@@ -32,7 +32,7 @@ final class AntiCsrfForRefreshSubscriber
                 throw new AccessDeniedHttpException('Invalid origin');
             }
 
-            if ($request->headers->get('X-Requested-With') !== 'XMLHttpRequest') {
+            if ('XMLHttpRequest' !== $request->headers->get('X-Requested-With')) {
                 throw new AccessDeniedHttpException('Missing CSRF header');
             }
         }

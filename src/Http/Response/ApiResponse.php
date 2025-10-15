@@ -37,8 +37,8 @@ final readonly class ApiResponse
         return [
             'success' => $this->success,
             'message' => $this->message,
-            'data'    => $this->data,
-            'errors'  => $this->errors,
+            'data' => $this->data,
+            'errors' => $this->errors,
         ];
     }
 

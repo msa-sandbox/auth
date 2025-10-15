@@ -10,16 +10,16 @@ use App\Infrastructure\Kafka\KafkaProducer;
 use App\Repository\UserRepositoryInterface;
 use App\Security\Roles;
 use App\Service\UsersService;
-use RuntimeException;
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
 use Psr\Log\LoggerInterface;
-use Doctrine\ORM\EntityManagerInterface;
+use RuntimeException;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 class UsersServiceTest extends KernelTestCase
 {
     /**
-     * Test normal case of setting new role for user
+     * Test normal case of setting new role for user.
      */
     public function testSetNewRoleUpdatesUser(): void
     {
@@ -51,7 +51,7 @@ class UsersServiceTest extends KernelTestCase
         $kafka->expects($this->once())
             ->method('send')
             ->with($this->callback(function ($payload) {
-                return $payload['event'] === 'user.role.changed'
+                return 'user.role.changed' === $payload['event']
                     && $payload['new_roles'] === ['ROLE_ADMIN'];
             }))
         ;
@@ -65,7 +65,7 @@ class UsersServiceTest extends KernelTestCase
     }
 
     /**
-     * Test a case that exception is thrown (kafka is not available) and transaction is reverted
+     * Test a case that exception is thrown (kafka is not available) and transaction is reverted.
      */
     public function testSetNewRoleUpdatesUserFail(): void
     {
@@ -98,7 +98,7 @@ class UsersServiceTest extends KernelTestCase
         $kafka->expects($this->once())
             ->method('send')
             ->with($this->callback(function ($payload) {
-                return $payload['event'] === 'user.role.changed'
+                return 'user.role.changed' === $payload['event']
                     && $payload['new_roles'] === ['ROLE_ADMIN'];
             }))
             ->will($this->throwException(new RuntimeException('Failed to send message to Kafka')));

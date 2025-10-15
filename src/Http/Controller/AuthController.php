@@ -11,9 +11,9 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 readonly class AuthController
@@ -30,7 +30,7 @@ readonly class AuthController
     public function login(Request $request, ValidatorInterface $validator, AuthService $authService): JsonResponse|ApiResponse
     {
         $dto = new LoginRequestDto(
-            email:    $request->get('email'),
+            email: $request->get('email'),
             password: $request->get('password')
         );
 
@@ -40,6 +40,7 @@ readonly class AuthController
             foreach ($errors as $error) {
                 $messages[$error->getPropertyPath()] = $error->getMessage();
             }
+
             return ApiResponse::error($messages, status: Response::HTTP_BAD_REQUEST);
         }
 
@@ -56,7 +57,6 @@ readonly class AuthController
         if (!$userLimit->isAccepted()) {
             return ApiResponse::error('Too many login attempts for this account', status: Response::HTTP_TOO_MANY_REQUESTS);
         }
-
 
         $authDto = $authService->login($dto->getEmail(), $dto->getPassword());
 

@@ -29,7 +29,6 @@ class RefreshToken
     #[ORM\Column]
     private bool $revoked = false;
 
-
     public function getId(): string
     {
         return $this->id;

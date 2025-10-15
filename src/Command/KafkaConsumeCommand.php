@@ -12,6 +12,8 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+use function pcntl_signal;
+
 #[AsCommand(
     name: 'kafka:consume',
     description: 'Reads messages from a Kafka topic',
@@ -30,7 +32,7 @@ final class KafkaConsumeCommand extends Command
         // Listen system signals (Ctrl+C etc)
         declare(ticks=1);
         $stop = false;
-        \pcntl_signal(SIGINT, function () use (&$stop, $output): void {
+        pcntl_signal(SIGINT, function () use (&$stop, $output): void {
             $output->writeln("\n<info>Stopping consumer...</info>");
             $stop = true;
         });
@@ -50,7 +52,7 @@ final class KafkaConsumeCommand extends Command
             $output->writeln("<info>Subscribed to topic: {$this->topicName}</info>");
             $output->writeln('<comment>Press Ctrl+C to stop.</comment>');
         } catch (Exception $e) {
-            $output->writeln('<error>Failed to subscribe to topic: ' . $e->getMessage() . '</error>');
+            $output->writeln('<error>Failed to subscribe to topic: '.$e->getMessage().'</error>');
 
             return Command::FAILURE;
         }
@@ -58,7 +60,7 @@ final class KafkaConsumeCommand extends Command
         // Read messages
         while (!$stop) {
             try {
-                $message = $consumer->consume(2000);// 2 sec waiting
+                $message = $consumer->consume(2000); // 2 sec waiting
 
                 switch ($message->err) {
                     case RD_KAFKA_RESP_ERR_NO_ERROR:
@@ -91,11 +93,12 @@ final class KafkaConsumeCommand extends Command
                         break;
                 }
             } catch (Exception $e) {
-                $output->writeln('<error>Kafka error: ' . $e->getMessage() . '</error>');
+                $output->writeln('<error>Kafka error: '.$e->getMessage().'</error>');
             }
         }
 
         $output->writeln('<info>Consumer stopped gracefully.</info>');
+
         return Command::SUCCESS;
     }
 }

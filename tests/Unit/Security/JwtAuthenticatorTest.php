@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Security;
 
-use PHPUnit\Framework\MockObject\MockObject;
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Security\JwtAuthenticator;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use PHPUnit\Framework\MockObject\MockObject;
+use RuntimeException;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 
 class JwtAuthenticatorTest extends KernelTestCase
@@ -60,7 +61,7 @@ class JwtAuthenticatorTest extends KernelTestCase
     {
         $this->jwtManager
             ->method('parse')
-            ->willThrowException(new \RuntimeException('Invalid'));
+            ->willThrowException(new RuntimeException('Invalid'));
 
         $request = new Request([], [], [], [], [], ['HTTP_AUTHORIZATION' => 'Bearer bad.jwt']);
 

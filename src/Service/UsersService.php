@@ -27,7 +27,7 @@ readonly class UsersService
     }
 
     /**
-     * Get all users
+     * Get all users.
      */
     public function getAllUsers(): array
     {
@@ -87,7 +87,7 @@ readonly class UsersService
     }
 
     /**
-     * Create event within Kafka
+     * Create event within Kafka.
      *
      * @param User $user
      * @param array $newRoles

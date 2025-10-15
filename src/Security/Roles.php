@@ -10,7 +10,7 @@ use Symfony\Component\Security\Core\Role\RoleHierarchyInterface;
 readonly class Roles
 {
     public function __construct(
-        private RoleHierarchyInterface $roleHierarchy
+        private RoleHierarchyInterface $roleHierarchy,
     ) {
     }
 
@@ -20,9 +20,9 @@ readonly class Roles
         self::ROLE_USER,
         self::ROLE_WEB_USER,
     ];
-    public const ROLE_ADMIN    = 'ROLE_ADMIN';
+    public const ROLE_ADMIN = 'ROLE_ADMIN';
     public const ROLE_API_USER = 'ROLE_API_USER';
-    public const ROLE_USER     = 'ROLE_USER';
+    public const ROLE_USER = 'ROLE_USER';
     public const ROLE_WEB_USER = 'ROLE_WEB_USER';
 
     public static function permissions(string $role): array

@@ -13,7 +13,8 @@ use Symfony\Component\HttpKernel\Event\TerminateEvent;
 /**
  * Responsible for collecting and exposing application metrics for Prometheus monitoring.
  * For docs watch:
- * @link https://github.com/artprima/prometheus-metrics-bundle
+ *
+ * @see https://github.com/artprima/prometheus-metrics-bundle
  */
 class MetricsService implements RequestMetricsCollectorInterface, TerminateMetricsCollectorInterface
 {

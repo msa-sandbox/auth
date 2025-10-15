@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Security;
 
-use DateTimeImmutable;
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use App\Entity\User;
 use App\Entity\RefreshToken;
+use App\Entity\User;
 use App\Exceptions\AuthException;
 use App\Repository\RefreshTokenRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
 use App\Security\AuthService;
+use DateTimeImmutable;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AuthServiceTest extends KernelTestCase

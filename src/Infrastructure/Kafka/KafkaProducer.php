@@ -42,8 +42,8 @@ readonly class KafkaProducer
 
             // Wait for confirmation
             $result = $this->producer->flush($conformationTime);
-            if ($result !== RD_KAFKA_RESP_ERR_NO_ERROR) {
-                throw new RuntimeException('Kafka flush failed: ' . $result);
+            if (RD_KAFKA_RESP_ERR_NO_ERROR !== $result) {
+                throw new RuntimeException('Kafka flush failed: '.$result);
             }
 
             $this->logger->info('Kafka message sent', ['payload' => $payload]);

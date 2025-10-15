@@ -11,7 +11,7 @@ final readonly class AuthResultDto
     public function __construct(
         private string $accessToken,
         private string $refreshId,
-        private DateTimeImmutable $expiresAt
+        private DateTimeImmutable $expiresAt,
     ) {
     }
 

@@ -73,7 +73,8 @@ final class WebControllerTest extends WebTestCase
 
     private function generateJwtForRole(string $role): string
     {
-        $user = $this->createUser('test_' . strtolower($role) . '@example.com', [$role]);
+        $user = $this->createUser('test_'.strtolower($role).'@example.com', [$role]);
+
         return $this->jwtManager->create($user);
     }
 
@@ -89,7 +90,7 @@ final class WebControllerTest extends WebTestCase
         $jwt = $this->generateJwtForRole('ROLE_USER');
 
         $this->client->request('GET', '/web/users', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $jwt,
+            'HTTP_AUTHORIZATION' => 'Bearer '.$jwt,
         ]);
 
         $response = $this->client->getResponse();
@@ -102,7 +103,7 @@ final class WebControllerTest extends WebTestCase
         $jwt = $this->generateJwtForRole('ROLE_USER');
 
         $this->client->request('PUT', '/web/users/1/roles', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $jwt,
+            'HTTP_AUTHORIZATION' => 'Bearer '.$jwt,
             'CONTENT_TYPE' => 'application/json',
         ], json_encode(['roles' => ['ROLE_ADMIN']]));
 
@@ -114,8 +115,8 @@ final class WebControllerTest extends WebTestCase
         $jwt = $this->generateJwtForRole('ROLE_ADMIN');
         $targetUser = $this->createUser('target2@example.com', ['ROLE_USER']);
 
-        $this->client->request('PUT', '/web/users/' . $targetUser->getId() . '/roles', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $jwt,
+        $this->client->request('PUT', '/web/users/'.$targetUser->getId().'/roles', [], [], [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$jwt,
             'CONTENT_TYPE' => 'application/json',
         ], json_encode(['roles' => ['ROLE_USER']]));
 
