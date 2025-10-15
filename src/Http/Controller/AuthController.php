@@ -22,8 +22,8 @@ readonly class AuthController
         private RateLimiterFactory $loginPerIpLimiter,
         private RateLimiterFactory $loginPerUserLimiter,
         private RateLimiterFactory $refreshPerIpLimiter,
-    )
-    {}
+    ) {
+    }
 
     #[Route('/web/login', methods: ['POST'])]
     #[isGranted('PUBLIC_ACCESS')]

@@ -12,10 +12,10 @@ final readonly class LoginRequestDto
         #[Assert\NotBlank(message: 'Missing email')]
         #[Assert\Email(message: 'Invalid email format')]
         private mixed $email,
-
         #[Assert\NotBlank(message: 'Missing password')]
         private mixed $password,
-    ) {}
+    ) {
+    }
 
     public function getEmail(): string
     {

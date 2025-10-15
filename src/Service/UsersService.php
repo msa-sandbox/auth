@@ -5,20 +5,24 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\User;
+use App\Exceptions\InfrastructureException;
 use App\Infrastructure\Kafka\KafkaProducer;
-use App\Manager\UserManager;
 use App\Repository\UserRepositoryInterface;
 use App\Security\Roles;
 use DateTimeImmutable;
+use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 readonly class UsersService
 {
     public function __construct(
         private UserRepositoryInterface $repository,
-        private UserManager $manager,
         private Roles $roles,
         private KafkaProducer $kafkaProducer,
+        private EntityManagerInterface $em,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -36,6 +40,14 @@ readonly class UsersService
         ], $users);
     }
 
+    /**
+     * @param int $id
+     * @param array $newRoles
+     *
+     * @return void
+     *
+     * @throws InfrastructureException
+     */
     public function setNewRole(int $id, array $newRoles): void
     {
         /** @var User|null $user */
@@ -49,12 +61,29 @@ readonly class UsersService
         //            throw new AccessDeniedException('Only admins can modify roles.');
         //        }
 
-        // Let's collapse roles to avoid logical duplicates
-        $new = $this->roles->collapseRoles($newRoles);
+        $this->em->beginTransaction();
 
-        $this->manager->updateRoles($user, $new);
+        try {
+            // Let's collapse roles to avoid logical duplicates
+            $collapsed = $this->roles->collapseRoles($newRoles);
 
-        $this->fireRoleCHangedEvent($user, $new);
+            $user->setRoles($collapsed);
+            $this->repository->save($user);
+
+            $this->fireRoleCHangedEvent($user, $collapsed);
+
+            $this->em->commit();
+        } catch (Throwable $e) {
+            $this->em->rollback();
+            $this->em->clear();
+
+            $this->logger->error('Role update failed, transaction rolled back', [
+                'userId' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new InfrastructureException('Failed to update roles');
+        }
     }
 
     /**

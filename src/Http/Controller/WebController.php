@@ -14,10 +14,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/web')]
 readonly class WebController
 {
-    public function __construct(
-    ) {
-    }
-
     #[Route('/users', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function getUsers(Request $request, UsersService $service): ApiResponse

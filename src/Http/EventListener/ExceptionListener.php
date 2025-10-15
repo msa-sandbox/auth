@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\EventListener;
 
 use App\Exceptions\AuthException;
+use App\Exceptions\InfrastructureException;
 use App\Http\Response\ApiResponse;
 use InvalidArgumentException;
 use LogicException;
@@ -34,6 +35,15 @@ final class ExceptionListener
 
         if ($exception instanceof AuthException) {
             $response = ApiResponse::error($exception->getMessage(), status: 401);
+
+            $event->setResponse(new JsonResponse(
+                $response->toArray(),
+                $response->getStatus()
+            ));
+        }
+
+        if ($exception instanceof InfrastructureException) {
+            $response = ApiResponse::error('Internal error, try later', status: 500);
 
             $event->setResponse(new JsonResponse(
                 $response->toArray(),
