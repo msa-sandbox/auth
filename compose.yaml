@@ -20,10 +20,6 @@ services:
     depends_on:
       - db
       - redis
-#    environment:
-#      DATABASE_URL: "mysql://app:app@db:3306/app?charset=utf8mb4"
-#      KAFKA_BROKERS: ${KAFKA_BROKERS}
-#      KAFKA_TOPIC: ${KAFKA_TOPIC}
 
   nginx:
     image: nginx:alpine
