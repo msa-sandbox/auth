@@ -10,7 +10,6 @@ return (new PhpCsFixer\Config())
         'array_syntax' => ['syntax' => 'short'],
         'single_quote' => true,
         'no_unused_imports' => true,
-        'fully_qualified_strict_types' => false,
 
         'phpdoc_align' => false,
         'no_superfluous_phpdoc_tags' => false,

@@ -26,7 +26,7 @@ readonly class AuthController
     }
 
     #[Route('/web/login', methods: ['POST'])]
-    #[isGranted('PUBLIC_ACCESS')]
+    #[IsGranted('PUBLIC_ACCESS')]
     public function login(Request $request, ValidatorInterface $validator, AuthService $authService): JsonResponse|ApiResponse
     {
         $dto = new LoginRequestDto(
@@ -65,7 +65,7 @@ readonly class AuthController
             ->withValue($authDto->getRefreshId())
             ->withHttpOnly(true)
             ->withSecure(true)
-            ->withSameSite('None')
+            ->withSameSite('none')
             ->withPath('/web')
             ->withExpires($authDto->getExpiresAt());
 
@@ -76,7 +76,7 @@ readonly class AuthController
     }
 
     #[Route('/web/refresh', methods: ['POST'])]
-    #[isGranted('PUBLIC_ACCESS')]
+    #[IsGranted('PUBLIC_ACCESS')]
     public function refresh(Request $request, AuthService $authService): JsonResponse|ApiResponse
     {
         // Rate limit per IP
@@ -98,7 +98,7 @@ readonly class AuthController
             ->withValue($authDto->getRefreshId())
             ->withHttpOnly(true)
             ->withSecure(true)
-            ->withSameSite('None')
+            ->withSameSite('none')
             ->withPath('/web')
             ->withExpires($authDto->getExpiresAt());
 
@@ -109,7 +109,7 @@ readonly class AuthController
     }
 
     #[Route('/web/logout', methods: ['POST'])]
-    #[isGranted('PUBLIC_ACCESS')]
+    #[IsGranted('PUBLIC_ACCESS')]
     public function logout(Request $request, AuthService $authService): JsonResponse|ApiResponse
     {
         $refreshId = $request->cookies->get('refresh_id');
@@ -123,7 +123,7 @@ readonly class AuthController
             ->withValue('')
             ->withExpires(0)
             ->withHttpOnly(true)
-            ->withSameSite('None')
+            ->withSameSite('none')
             ->withPath('/web');
 
         $response = new JsonResponse(['success' => true]);

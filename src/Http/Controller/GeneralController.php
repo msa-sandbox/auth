@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[isGranted('PUBLIC_ACCESS')]
+#[IsGranted('PUBLIC_ACCESS')]
 readonly class GeneralController
 {
     #[Route('/', methods: ['GET'])]
