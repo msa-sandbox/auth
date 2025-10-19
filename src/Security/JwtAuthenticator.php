@@ -51,12 +51,14 @@ class JwtAuthenticator extends AbstractAuthenticator
             throw new AuthenticationException('Invalid JWT token');
         }
 
-        // Ensure email exists in token
-        if (!isset($data['username'])) {
-            throw new AuthenticationException('Invalid JWT token: email not found');
+        // Ensure id and email exist in token
+        if (!isset($data['id']) || !isset($data['username'])) {
+            throw new AuthenticationException('Invalid JWT token: id or email not found');
         }
 
         // Get user through UserProvider
+        // We still use only email for auth and ignore id. This is fine anyway.
+        //  It is possible to change if profile callback into UserBadge.
         return new SelfValidatingPassport(
             new UserBadge($data['username'])
         );

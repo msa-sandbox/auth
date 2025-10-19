@@ -12,6 +12,7 @@ final readonly class AuthResultDto
         private string $accessToken,
         private string $refreshId,
         private DateTimeImmutable $expiresAt,
+        private int $ttl,
     ) {
     }
 
@@ -28,5 +29,10 @@ final readonly class AuthResultDto
     public function getExpiresAt(): DateTimeImmutable
     {
         return $this->expiresAt;
+    }
+
+    public function getTtl(): int
+    {
+        return $this->ttl;
     }
 }

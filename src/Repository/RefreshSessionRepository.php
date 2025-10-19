@@ -2,22 +2,22 @@
 
 namespace App\Repository;
 
-use App\Entity\RefreshToken;
+use App\Entity\RefreshSession;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<RefreshToken>
+ * @extends ServiceEntityRepository<RefreshSession>
  */
-class RefreshTokenRepository extends ServiceEntityRepository implements RefreshTokenRepositoryInterface
+class RefreshSessionRepository extends ServiceEntityRepository implements RefreshSessionRepositoryInterface
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, RefreshToken::class);
+        parent::__construct($registry, RefreshSession::class);
     }
 
-    public function save(RefreshToken $refreshToken): void
+    public function save(RefreshSession $refreshToken): void
     {
         $em = $this->getEntityManager();
 
@@ -25,7 +25,7 @@ class RefreshTokenRepository extends ServiceEntityRepository implements RefreshT
         $em->flush();
     }
 
-    public function findValid(string $refreshId): ?RefreshToken
+    public function findValid(string $refreshId): ?RefreshSession
     {
         return $this->createQueryBuilder('r')
             ->where('r.id = :refreshId')

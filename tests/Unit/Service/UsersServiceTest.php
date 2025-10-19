@@ -7,8 +7,9 @@ namespace App\Tests\Unit\Service;
 use App\Entity\User;
 use App\Exceptions\InfrastructureException;
 use App\Infrastructure\Kafka\KafkaProducer;
+use App\Repository\UserPermissionRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
-use App\Security\Roles;
+use App\Service\UserPermissionService;
 use App\Service\UsersService;
 use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
@@ -19,9 +20,9 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 class UsersServiceTest extends KernelTestCase
 {
     /**
-     * Test normal case of setting new role for user.
+     * Test normal case of setting new permissions for user.
      */
-    public function testSetNewRoleUpdatesUser(): void
+    public function testSetNewPermissionsUpdatesUser(): void
     {
         $user = (new User())
             ->setId(1)
@@ -29,45 +30,53 @@ class UsersServiceTest extends KernelTestCase
             ->setName('Tester')
             ->setRoles(['ROLE_USER']);
 
-        $repository = $this->createMock(UserRepositoryInterface::class);
-        $repository->expects($this->once())
+        $permissions = [
+            'crm' => [
+                'access' => ['web' => true, 'api' => false],
+                'permissions' => [
+                    'lead' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                    'contact' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                    'deal' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                ],
+            ],
+        ];
+
+        $userRepository = $this->createMock(UserRepositoryInterface::class);
+        $userRepository->expects($this->once())
             ->method('find')
             ->with(1)
             ->willReturn($user);
-        $repository->expects($this->once())
-            ->method('save')
-            ->with($user);
+
+        $permissionService = $this->createMock(UserPermissionService::class);
+        $permissionService->expects($this->once())
+            ->method('update')
+            ->with($user, $permissions);
+
+        $permissionRepository = $this->createMock(UserPermissionRepositoryInterface::class);
 
         $em = $this->createMock(EntityManagerInterface::class);
         $em->expects($this->once())->method('beginTransaction');
         $em->expects($this->once())->method('commit');
         $em->expects($this->never())->method('rollback');
 
-        $roles = $this->createMock(Roles::class);
-        $roles->method('collapseRoles')
-            ->willReturn(['ROLE_ADMIN']);
-
         $kafka = $this->createMock(KafkaProducer::class);
         $kafka->expects($this->once())
             ->method('send')
             ->with($this->callback(function ($payload) {
-                return 'user.role.changed' === $payload['event']
-                    && $payload['new_roles'] === ['ROLE_ADMIN'];
-            }))
-        ;
+                return 'user.permissions.changed' === $payload['event']
+                    && $payload['user_id'] === 1;
+            }));
 
         $logger = $this->createMock(LoggerInterface::class);
 
-        $service = new UsersService($repository, $roles, $kafka, $em, $logger);
-        $service->setNewRole(1, ['ROLE_ADMIN']);
-
-        $this->assertSame(['ROLE_ADMIN'], $user->getRoles());
+        $service = new UsersService($permissionService, $kafka, $userRepository, $permissionRepository, $em, $logger);
+        $service->setNewPermissions(1, $permissions);
     }
 
     /**
      * Test a case that exception is thrown (kafka is not available) and transaction is reverted.
      */
-    public function testSetNewRoleUpdatesUserFail(): void
+    public function testSetNewPermissionsFailsWhenKafkaUnavailable(): void
     {
         $user = (new User())
             ->setId(1)
@@ -75,14 +84,29 @@ class UsersServiceTest extends KernelTestCase
             ->setName('Tester')
             ->setRoles(['ROLE_USER']);
 
-        $repository = $this->createMock(UserRepositoryInterface::class);
-        $repository->expects($this->once())
+        $permissions = [
+            'crm' => [
+                'access' => ['web' => true, 'api' => false],
+                'permissions' => [
+                    'lead' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                    'contact' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                    'deal' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                ],
+            ],
+        ];
+
+        $userRepository = $this->createMock(UserRepositoryInterface::class);
+        $userRepository->expects($this->once())
             ->method('find')
             ->with(1)
             ->willReturn($user);
-        $repository->expects($this->once())
-            ->method('save')
-            ->with($user);
+
+        $permissionService = $this->createMock(UserPermissionService::class);
+        $permissionService->expects($this->once())
+            ->method('update')
+            ->with($user, $permissions);
+
+        $permissionRepository = $this->createMock(UserPermissionRepositoryInterface::class);
 
         $em = $this->createMock(EntityManagerInterface::class);
         $em->expects($this->once())->method('beginTransaction');
@@ -90,41 +114,49 @@ class UsersServiceTest extends KernelTestCase
         $em->expects($this->once())->method('rollback');
         $em->expects($this->once())->method('clear');
 
-        $roles = $this->createMock(Roles::class);
-        $roles->method('collapseRoles')
-            ->willReturn(['ROLE_ADMIN']);
-
         $kafka = $this->createMock(KafkaProducer::class);
         $kafka->expects($this->once())
             ->method('send')
             ->with($this->callback(function ($payload) {
-                return 'user.role.changed' === $payload['event']
-                    && $payload['new_roles'] === ['ROLE_ADMIN'];
+                return 'user.permissions.changed' === $payload['event']
+                    && $payload['user_id'] === 1;
             }))
             ->will($this->throwException(new RuntimeException('Failed to send message to Kafka')));
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects($this->once())->method('error');
 
-        $service = new UsersService($repository, $roles, $kafka, $em, $logger);
+        $service = new UsersService($permissionService, $kafka, $userRepository, $permissionRepository, $em, $logger);
 
         $this->expectException(InfrastructureException::class);
-        $service->setNewRole(1, ['ROLE_ADMIN']);
+        $service->setNewPermissions(1, $permissions);
     }
 
-    public function testSetNewRoleThrowsIfUserNotFound(): void
+    public function testSetNewPermissionsThrowsIfUserNotFound(): void
     {
-        $repository = $this->createMock(UserRepositoryInterface::class);
-        $repository->method('find')->willReturn(null);
+        $permissions = [
+            'crm' => [
+                'access' => ['web' => true, 'api' => false],
+                'permissions' => [
+                    'lead' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                    'contact' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                    'deal' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                ],
+            ],
+        ];
 
-        $roles = $this->createMock(Roles::class);
+        $userRepository = $this->createMock(UserRepositoryInterface::class);
+        $userRepository->method('find')->willReturn(null);
+
+        $permissionService = $this->createMock(UserPermissionService::class);
+        $permissionRepository = $this->createMock(UserPermissionRepositoryInterface::class);
         $kafka = $this->createMock(KafkaProducer::class);
         $em = $this->createMock(EntityManagerInterface::class);
         $logger = $this->createMock(LoggerInterface::class);
 
-        $service = new UsersService($repository, $roles, $kafka, $em, $logger);
+        $service = new UsersService($permissionService, $kafka, $userRepository, $permissionRepository, $em, $logger);
 
         $this->expectException(LogicException::class);
-        $service->setNewRole(99, ['ROLE_ADMIN']);
+        $service->setNewPermissions(99, $permissions);
     }
 }

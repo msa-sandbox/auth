@@ -75,7 +75,7 @@ final class WebControllerTest extends WebTestCase
     {
         $user = $this->createUser('test_'.strtolower($role).'@example.com', [$role]);
 
-        return $this->jwtManager->create($user);
+        return $this->jwtManager->createFromPayload($user, ['id' => $user->getId()]);
     }
 
     public function testGetUsersRequiresAuthentication(): void
@@ -98,27 +98,46 @@ final class WebControllerTest extends WebTestCase
         self::assertJson($response->getContent());
     }
 
-    public function testSetUserRoleRequiresAdmin(): void
+    public function testSetUserPermissionsRequiresAdmin(): void
     {
         $jwt = $this->generateJwtForRole('ROLE_USER');
+        $targetUser = $this->createUser('target@example.com', ['ROLE_USER']);
 
-        $this->client->request('PUT', '/web/users/1/roles', [], [], [
+        $this->client->request('PUT', '/web/user/'.$targetUser->getId().'/permissions', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer '.$jwt,
             'CONTENT_TYPE' => 'application/json',
-        ], json_encode(['roles' => ['ROLE_ADMIN']]));
+        ], json_encode([
+            'crm' => [
+                'access' => ['web' => true, 'api' => false],
+                'permissions' => [
+                    'lead' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                    'contact' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                    'deal' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                ],
+            ],
+        ]));
 
         self::assertSame(Response::HTTP_FORBIDDEN, $this->client->getResponse()->getStatusCode());
     }
 
-    public function testSetUserRoleWithAdmin(): void
+    public function testSetUserPermissionsWithAdmin(): void
     {
         $jwt = $this->generateJwtForRole('ROLE_ADMIN');
         $targetUser = $this->createUser('target2@example.com', ['ROLE_USER']);
 
-        $this->client->request('PUT', '/web/users/'.$targetUser->getId().'/roles', [], [], [
+        $this->client->request('PUT', '/web/user/'.$targetUser->getId().'/permissions', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer '.$jwt,
             'CONTENT_TYPE' => 'application/json',
-        ], json_encode(['roles' => ['ROLE_USER']]));
+        ], json_encode([
+            'crm' => [
+                'access' => ['web' => true, 'api' => false],
+                'permissions' => [
+                    'lead' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                    'contact' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                    'deal' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                ],
+            ],
+        ]));
 
         $response = $this->client->getResponse();
         self::assertSame(Response::HTTP_OK, $response->getStatusCode());

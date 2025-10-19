@@ -2,12 +2,12 @@
 
 namespace App\Entity;
 
-use App\Repository\RefreshTokenRepository;
+use App\Repository\RefreshSessionRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: RefreshTokenRepository::class)]
-class RefreshToken
+#[ORM\Entity(repositoryClass: RefreshSessionRepository::class)]
+class RefreshSession
 {
     #[ORM\Id]
     #[ORM\Column(length: 36)]

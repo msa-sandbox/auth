@@ -21,9 +21,7 @@ security:
 #    - { path: ^/web, roles: ROLE_WEB_USER }
 #    - { path: ^/api, roles: ROLE_API_USER }
   role_hierarchy:
-    ROLE_ADMIN: [ ROLE_WEB_USER, ROLE_API_USER ]
-    ROLE_WEB_USER: [ ROLE_USER ]
-    ROLE_API_USER: [ ROLE_USER ]
+    ROLE_ADMIN: [ ROLE_USER ]
 
 when@test:
   security:

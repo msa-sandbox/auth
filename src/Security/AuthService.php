@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Security;
 
-use App\Entity\RefreshToken;
+use App\Entity\RefreshSession;
 use App\Entity\User;
 use App\Exceptions\AuthException;
-use App\Repository\RefreshTokenRepositoryInterface;
+use App\Repository\RefreshSessionRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
 use App\Security\Dto\AuthResultDto;
 use DateTimeImmutable;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -20,8 +21,9 @@ readonly class AuthService
     public function __construct(
         private JWTTokenManagerInterface $jwt,
         private UserRepositoryInterface $userRepository,
-        private RefreshTokenRepositoryInterface $refreshTokenRepository,
+        private RefreshSessionRepositoryInterface $refreshSessionRepository,
         private UserPasswordHasherInterface $passwordHasher,
+        private ParameterBagInterface $params,
     ) {
     }
 
@@ -45,14 +47,14 @@ readonly class AuthService
      */
     public function refresh(string $refreshId): AuthResultDto
     {
-        $token = $this->refreshTokenRepository->findValid($refreshId);
+        $token = $this->refreshSessionRepository->findValid($refreshId);
         if (!$token) {
             throw new AuthException('Invalid refresh token');
         }
         $user = $token->getUser();
 
         $token->markUsed()->setRevoked();
-        $this->refreshTokenRepository->save($token);
+        $this->refreshSessionRepository->save($token);
 
         return $this->createTokens($user);
     }
@@ -62,14 +64,14 @@ readonly class AuthService
      */
     public function logout(string $refreshId): void
     {
-        /** @var RefreshToken|null $token */
-        $token = $this->refreshTokenRepository->findOneBy(['id' => $refreshId]);
+        /** @var RefreshSession|null $token */
+        $token = $this->refreshSessionRepository->findOneBy(['id' => $refreshId]);
         if (!$token) {
             throw new AuthException('Invalid refresh token');
         }
 
         $token->markUsed()->setRevoked();
-        $this->refreshTokenRepository->save($token);
+        $this->refreshSessionRepository->save($token);
     }
 
     /**
@@ -81,27 +83,28 @@ readonly class AuthService
      *
      * @return AuthResultDto
      */
-    private function createTokens(User $user): AuthResultDto
+    public function createTokens(User $user): AuthResultDto
     {
         // Create JWT
-        $accessToken = $this->jwt->create($user);
+        $accessToken = $this->jwt->createFromPayload($user, ['id' => $user->getId()]);
 
         // Create a refresh session
         $refreshId = Uuid::v4()->toRfc4122();
 
         // Create a refresh token
-        $token = (new RefreshToken())
+        $token = (new RefreshSession())
             ->setId($refreshId)
             ->setUser($user)
             ->setCreatedAt(new DateTimeImmutable())
             ->setExpiresAt(new DateTimeImmutable('+7 days'));
 
-        $this->refreshTokenRepository->save($token);
+        $this->refreshSessionRepository->save($token);
 
         return new AuthResultDto(
             $accessToken,
             $token->getId(),
-            $token->getExpiresAt()
+            $token->getExpiresAt(),
+            $this->params->get('lexik_jwt_authentication.token_ttl')
         );
     }
 }

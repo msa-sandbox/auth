@@ -4,33 +4,42 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Security;
 
-use App\Entity\RefreshToken;
+use App\Entity\RefreshSession;
 use App\Entity\User;
 use App\Exceptions\AuthException;
-use App\Repository\RefreshTokenRepositoryInterface;
+use App\Repository\RefreshSessionRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
 use App\Security\AuthService;
 use DateTimeImmutable;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AuthServiceTest extends KernelTestCase
 {
     private $jwt;
     private $users;
-    private $tokens;
+    private $session;
     private $hasher;
+    private $params;
     private AuthService $auth;
 
     protected function setUp(): void
     {
         $this->jwt = $this->createMock(JWTTokenManagerInterface::class);
         $this->users = $this->createMock(UserRepositoryInterface::class);
-        $this->tokens = $this->createMock(RefreshTokenRepositoryInterface::class);
+        $this->session = $this->createMock(RefreshSessionRepositoryInterface::class);
         $this->hasher = $this->createMock(UserPasswordHasherInterface::class);
+        $this->params = $this->createMock(ParameterBagInterface::class);
 
-        $this->auth = new AuthService($this->jwt, $this->users, $this->tokens, $this->hasher);
+        // Mock JWT TTL parameter
+        $this->params
+            ->method('get')
+            ->with('lexik_jwt_authentication.token_ttl')
+            ->willReturn(3600);
+
+        $this->auth = new AuthService($this->jwt, $this->users, $this->session, $this->hasher, $this->params);
     }
 
     public function testLoginSuccess(): void
@@ -47,14 +56,14 @@ class AuthServiceTest extends KernelTestCase
             ->willReturn(true);
 
         $this->jwt
-            ->method('create')
-            ->with($user)
+            ->method('createFromPayload')
+            ->with($user, self::isType('array'))
             ->willReturn('jwt.token');
 
-        $this->tokens
+        $this->session
             ->expects(self::once())
             ->method('save')
-            ->with(self::isInstanceOf(RefreshToken::class));
+            ->with(self::isInstanceOf(RefreshSession::class));
 
         $result = $this->auth->login('test@example.com', 'password');
 

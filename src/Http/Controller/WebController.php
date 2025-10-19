@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controller;
 
+use App\Http\Dto\SetUserPermissionsRequestDto;
 use App\Http\Response\ApiResponse;
 use App\Security\Roles;
 use App\Service\UsersService;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/web')]
 readonly class WebController
@@ -21,20 +24,32 @@ readonly class WebController
         return ApiResponse::success($service->getAllUsers());
     }
 
-    #[Route('/users/{id}/roles', requirements: ['id' => '\d+'], methods: ['PUT'])]
+    #[Route('/user/{id}/permissions', requirements: ['id' => '\d+'], methods: ['GET'])]
     #[IsGranted('ROLE_ADMIN')]
-    public function setUserRole(Request $request, UsersService $service, int $id): ApiResponse
+    public function getUserPermissions(Request $request, UsersService $service, int $id): ApiResponse
     {
-        $data = $request->getPayload()->all();
-        $newRoles = $data['roles'] ?? [];
+        return ApiResponse::success($service->getUserPermissions($id));
+    }
 
-        if (!$newRoles || array_diff($newRoles, Roles::ALL_ROLES)) {
-            return ApiResponse::error('Invalid role provided');
+    #[Route('/user/{id}/permissions', requirements: ['id' => '\d+'], methods: ['PUT'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function setUserPermissions(Request $request, ValidatorInterface $validator, UsersService $service, int $id): ApiResponse
+    {
+        $dto = new SetUserPermissionsRequestDto($request->getPayload()->all());
+
+        $errors = $validator->validate($dto);
+        if (count($errors) > 0) {
+            $messages = [];
+            foreach ($errors as $error) {
+                $messages[$error->getPropertyPath()] = $error->getMessage();
+            }
+
+            return ApiResponse::error($messages, status: Response::HTTP_BAD_REQUEST);
         }
 
-        $service->setNewRole($id, $newRoles);
+        $service->setNewPermissions($id, $dto->toArray());
 
-        return ApiResponse::success(message: 'Roles updated');
+        return ApiResponse::success(message: 'Permissions updated');
     }
 
     #[Route('/users/roles', methods: ['GET'])]

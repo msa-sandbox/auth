@@ -30,8 +30,8 @@ readonly class AuthController
     public function login(Request $request, ValidatorInterface $validator, AuthService $authService): JsonResponse|ApiResponse
     {
         $dto = new LoginRequestDto(
-            email: $request->get('email'),
-            password: $request->get('password')
+            email: $request->getPayload()->get('email'),
+            password: $request->getPayload()->get('password')
         );
 
         $errors = $validator->validate($dto);
@@ -69,7 +69,7 @@ readonly class AuthController
             ->withPath('/web')
             ->withExpires($authDto->getExpiresAt());
 
-        $response = (new JsonResponse(['token' => $authDto->getAccessToken()]));
+        $response = (new JsonResponse(['token' => $authDto->getAccessToken(), 'ttl' => $authDto->getTtl()]));
         $response->headers->setCookie($cookie);
 
         return $response;
@@ -102,7 +102,7 @@ readonly class AuthController
             ->withPath('/web')
             ->withExpires($authDto->getExpiresAt());
 
-        $response = (new JsonResponse(['token' => $authDto->getAccessToken()]));
+        $response = (new JsonResponse(['token' => $authDto->getAccessToken(), 'ttl' => $authDto->getTtl()]));
         $response->headers->setCookie($cookie);
 
         return $response;
