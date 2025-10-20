@@ -7,7 +7,6 @@ namespace App\Tests\Unit\Service;
 use App\Entity\User;
 use App\Exceptions\InfrastructureException;
 use App\Infrastructure\Kafka\KafkaProducer;
-use App\Repository\UserPermissionRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
 use App\Service\UserPermissionService;
 use App\Service\UsersService;
@@ -52,8 +51,6 @@ class UsersServiceTest extends KernelTestCase
             ->method('update')
             ->with($user, $permissions);
 
-        $permissionRepository = $this->createMock(UserPermissionRepositoryInterface::class);
-
         $em = $this->createMock(EntityManagerInterface::class);
         $em->expects($this->once())->method('beginTransaction');
         $em->expects($this->once())->method('commit');
@@ -64,12 +61,12 @@ class UsersServiceTest extends KernelTestCase
             ->method('send')
             ->with($this->callback(function ($payload) {
                 return 'user.permissions.changed' === $payload['event']
-                    && $payload['user_id'] === 1;
+                    && 1 === $payload['user_id'];
             }));
 
         $logger = $this->createMock(LoggerInterface::class);
 
-        $service = new UsersService($permissionService, $kafka, $userRepository, $permissionRepository, $em, $logger);
+        $service = new UsersService($permissionService, $kafka, $userRepository, $em, $logger);
         $service->setNewPermissions(1, $permissions);
     }
 
@@ -106,8 +103,6 @@ class UsersServiceTest extends KernelTestCase
             ->method('update')
             ->with($user, $permissions);
 
-        $permissionRepository = $this->createMock(UserPermissionRepositoryInterface::class);
-
         $em = $this->createMock(EntityManagerInterface::class);
         $em->expects($this->once())->method('beginTransaction');
         $em->expects($this->never())->method('commit');
@@ -119,14 +114,14 @@ class UsersServiceTest extends KernelTestCase
             ->method('send')
             ->with($this->callback(function ($payload) {
                 return 'user.permissions.changed' === $payload['event']
-                    && $payload['user_id'] === 1;
+                    && 1 === $payload['user_id'];
             }))
             ->will($this->throwException(new RuntimeException('Failed to send message to Kafka')));
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects($this->once())->method('error');
 
-        $service = new UsersService($permissionService, $kafka, $userRepository, $permissionRepository, $em, $logger);
+        $service = new UsersService($permissionService, $kafka, $userRepository, $em, $logger);
 
         $this->expectException(InfrastructureException::class);
         $service->setNewPermissions(1, $permissions);
@@ -149,14 +144,74 @@ class UsersServiceTest extends KernelTestCase
         $userRepository->method('find')->willReturn(null);
 
         $permissionService = $this->createMock(UserPermissionService::class);
-        $permissionRepository = $this->createMock(UserPermissionRepositoryInterface::class);
         $kafka = $this->createMock(KafkaProducer::class);
         $em = $this->createMock(EntityManagerInterface::class);
         $logger = $this->createMock(LoggerInterface::class);
 
-        $service = new UsersService($permissionService, $kafka, $userRepository, $permissionRepository, $em, $logger);
+        $service = new UsersService($permissionService, $kafka, $userRepository, $em, $logger);
 
         $this->expectException(LogicException::class);
         $service->setNewPermissions(99, $permissions);
+    }
+
+    /**
+     * Test getUserPermissions throws exception when user not found.
+     */
+    public function testGetUserPermissionsThrowsIfUserNotFound(): void
+    {
+        $userRepository = $this->createMock(UserRepositoryInterface::class);
+        $userRepository->method('find')->willReturn(null);
+
+        $permissionService = $this->createMock(UserPermissionService::class);
+        $kafka = $this->createMock(KafkaProducer::class);
+        $em = $this->createMock(EntityManagerInterface::class);
+        $logger = $this->createMock(LoggerInterface::class);
+
+        $service = new UsersService($permissionService, $kafka, $userRepository, $em, $logger);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('User not found');
+        $service->getUserPermissions(99);
+    }
+
+    /**
+     * Test getUserPermissions delegates to UserPermissionService.
+     */
+    public function testGetUserPermissionsDelegatesToPermissionService(): void
+    {
+        $user = (new User())
+            ->setId(1)
+            ->setEmail('test@example.com')
+            ->setName('Test User');
+
+        $expectedResult = [
+            'crm' => [
+                'access' => ['web' => true, 'api' => false],
+                'permissions' => [
+                    'lead' => ['read' => true, 'write' => false, 'delete' => false, 'import' => false, 'export' => false],
+                ],
+            ],
+        ];
+
+        $userRepository = $this->createMock(UserRepositoryInterface::class);
+        $userRepository->expects($this->once())
+            ->method('find')
+            ->with(1)
+            ->willReturn($user);
+
+        $permissionService = $this->createMock(UserPermissionService::class);
+        $permissionService->expects($this->once())
+            ->method('getUserPermissions')
+            ->with($user)
+            ->willReturn($expectedResult);
+
+        $kafka = $this->createMock(KafkaProducer::class);
+        $em = $this->createMock(EntityManagerInterface::class);
+        $logger = $this->createMock(LoggerInterface::class);
+
+        $service = new UsersService($permissionService, $kafka, $userRepository, $em, $logger);
+        $result = $service->getUserPermissions(1);
+
+        $this->assertSame($expectedResult, $result);
     }
 }

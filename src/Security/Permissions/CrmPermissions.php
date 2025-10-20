@@ -14,6 +14,7 @@ class CrmPermissions
     // System permissions
     public const ACCESS_WEB = 'web';
     public const ACCESS_API = 'api';
+    public const ACCESS_ALL = 'all';
 
     // Entities (crm)
     public const LEAD = 'lead';

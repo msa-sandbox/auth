@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Dto;
 
+use App\Security\Permissions\CrmPermissions;
 use Symfony\Component\Validator\Constraints as Assert;
 
 final readonly class CrmPermissionsDto
@@ -16,8 +17,8 @@ final readonly class CrmPermissionsDto
         // Create nested DTO immediately so #[Assert\Valid] can validate it
         $this->access = is_array($access)
             ? new AccessDto(
-                web: $access['web'] ?? null,
-                api: $access['api'] ?? null,
+                web: $access[CrmPermissions::ACCESS_WEB] ?? null,
+                api: $access[CrmPermissions::ACCESS_API] ?? null,
             )
             : $access;
 
@@ -36,11 +37,11 @@ final readonly class CrmPermissionsDto
     #[Assert\All([
         new Assert\Collection([
             'fields' => [
-                'read' => new Assert\Type('bool'),
-                'write' => new Assert\Type('bool'),
-                'delete' => new Assert\Type('bool'),
-                'import' => new Assert\Type('bool'),
-                'export' => new Assert\Type('bool'),
+                CrmPermissions::READ => new Assert\Type('bool'),
+                CrmPermissions::WRITE => new Assert\Type('bool'),
+                CrmPermissions::DELETE => new Assert\Type('bool'),
+                CrmPermissions::IMPORT => new Assert\Type('bool'),
+                CrmPermissions::EXPORT => new Assert\Type('bool'),
             ],
             'allowExtraFields' => false,
             'allowMissingFields' => false,

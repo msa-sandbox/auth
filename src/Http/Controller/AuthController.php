@@ -6,7 +6,8 @@ namespace App\Http\Controller;
 
 use App\Http\Dto\LoginRequestDto;
 use App\Http\Response\ApiResponse;
-use App\Security\AuthService;
+use App\Metrics\MetricsCollector;
+use App\Service\AuthService;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +23,7 @@ readonly class AuthController
         private RateLimiterFactory $loginPerIpLimiter,
         private RateLimiterFactory $loginPerUserLimiter,
         private RateLimiterFactory $refreshPerIpLimiter,
+        private MetricsCollector $metricsCollector,
     ) {
     }
 
@@ -48,6 +50,8 @@ readonly class AuthController
         $ipLimiter = $this->loginPerIpLimiter->create($request->getClientIp() ?? 'unknown');
         $ipLimit = $ipLimiter->consume();
         if (!$ipLimit->isAccepted()) {
+            $this->metricsCollector->incrementLoginAttempts('failure', 'rate_limited');
+
             return ApiResponse::error('Too many requests from this IP', status: Response::HTTP_TOO_MANY_REQUESTS);
         }
 
@@ -55,6 +59,8 @@ readonly class AuthController
         $userLimiter = $this->loginPerUserLimiter->create(strtolower($dto->getEmail()));
         $userLimit = $userLimiter->consume();
         if (!$userLimit->isAccepted()) {
+            $this->metricsCollector->incrementLoginAttempts('failure', 'rate_limited');
+
             return ApiResponse::error('Too many login attempts for this account', status: Response::HTTP_TOO_MANY_REQUESTS);
         }
 

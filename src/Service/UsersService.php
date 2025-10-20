@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\User;
-use App\Entity\UserPermission;
 use App\Exceptions\InfrastructureException;
 use App\Infrastructure\Kafka\KafkaProducer;
-use App\Repository\UserPermissionRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
-use App\Security\Permissions\Permissions;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
@@ -23,7 +20,6 @@ readonly class UsersService
         private UserPermissionService $userPermissionService,
         private KafkaProducer $kafkaProducer,
         private UserRepositoryInterface $repository,
-        private UserPermissionRepositoryInterface $userPermissionRepository,
         private EntityManagerInterface $em,
         private LoggerInterface $logger,
     ) {
@@ -46,6 +42,12 @@ readonly class UsersService
     /**
      * Set new permissions for a user.
      * Currently, only admins can change permissions (checked on Controller level).
+     * Important moment with kafka. Usually there are 2 ways how to deal if we fail to send message to kafka.
+     * 1. Add this even to some queue and retry later
+     * 2. Rollback transaction.
+     *
+     * I choose the second option. Reason is only one: Permissions are critical data.
+     * If we fail to notify other services about the change, they will work with stale data.
      *
      * @param int $id
      * @param array $newPermissions
@@ -103,10 +105,9 @@ readonly class UsersService
     }
 
     /**
-     * Find all permissions that a user has and can have.
+     * Get all permissions for a user.
      *
-     * Returns a structure with all possible permissions (from Permissions::all())
-     * where flags are set to true for permissions the user has in DB.
+     * Delegates to UserPermissionService.
      *
      * @param int $id
      *
@@ -120,81 +121,6 @@ readonly class UsersService
             throw new LogicException('User not found');
         }
 
-        // Get template with all possible permissions (all flags set to false)
-        $permissions = Permissions::all();
-
-        // Fetch what is set within DB
-        $userPermissions = $this->userPermissionRepository->findBy(['user' => $user]);
-
-        // Map DB records into the permissions structure
-        return $this->mapUserPermissions($permissions, $userPermissions);
-    }
-
-    /**
-     * Map UserPermission entities into permissions array structure.
-     *
-     * Takes a template array and applies user permissions from DB,
-     * setting flags to true where user has permissions.
-     *
-     * @param array $permissions Template array with all possible permissions
-     * @param UserPermission[] $userPermissions User's permissions from DB
-     *
-     * @return array Permissions array with user's permissions applied
-     */
-    private function mapUserPermissions(array $permissions, array $userPermissions): array
-    {
-        /** @var UserPermission $item */
-        foreach ($userPermissions as $item) {
-            $scope = $item->getScope();
-
-            // Apply access flags (web/api or both)
-            $permissions[$scope]['access'] = $this->applyAccessFlags(
-                $permissions[$scope]['access'],
-                $item->getAccess()
-            );
-
-            // Apply entity permissions (read, write, delete, etc.)
-            $permissions[$scope]['permissions'][$item->getEntity()] = $this->applyEntityPermissions(
-                $permissions[$scope]['permissions'][$item->getEntity()],
-                $item->getAction()
-            );
-        }
-
-        return $permissions;
-    }
-
-    /**
-     * Apply access flags based on stored access type.
-     *
-     * @param array $currentAccess Current access flags ['web' => bool, 'api' => bool]
-     * @param string $accessType Stored access type: 'all', 'web', or 'api'
-     *
-     * @return array Updated access flags
-     */
-    private function applyAccessFlags(array $currentAccess, string $accessType): array
-    {
-        if ('all' === $accessType) {
-            return ['web' => true, 'api' => true];
-        }
-
-        $currentAccess[$accessType] = true;
-
-        return $currentAccess;
-    }
-
-    /**
-     * Apply entity permissions (read, write, delete, etc.).
-     *
-     * @param array $currentPermissions Current permissions ['read' => bool, 'write' => bool, ...]
-     * @param array $allowedActions Actions user is allowed to perform
-     *
-     * @return array Updated permissions
-     */
-    private function applyEntityPermissions(array $currentPermissions, array $allowedActions): array
-    {
-        return array_replace(
-            $currentPermissions,
-            array_fill_keys($allowedActions, true)
-        );
+        return $this->userPermissionService->getUserPermissions($user);
     }
 }

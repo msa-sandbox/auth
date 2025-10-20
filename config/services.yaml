@@ -43,9 +43,15 @@ services:
       $topicName: '%env(KAFKA_TOPIC)%'
     tags: [ 'console.command' ]
 
+  # Exception Formatter
+  App\Helper\ExceptionFormatter:
+    arguments:
+      $projectRoot: '%kernel.project_dir%'
 
   # Bindings
   # It is always better to do it dynamically, but since we have very small service, it is ok
+  App\Repository\CrmExchangeTokenRepositoryInterface: '@App\Repository\CrmExchangeTokenRepository'
+  App\Repository\CrmRefreshTokenRepositoryInterface:  '@App\Repository\CrmRefreshTokenRepository'
   App\Repository\RefreshSessionRepositoryInterface:   '@App\Repository\RefreshSessionRepository'
   App\Repository\UserPermissionRepositoryInterface:   '@App\Repository\UserPermissionRepository'
   App\Repository\UserRepositoryInterface:             '@App\Repository\UserRepository'

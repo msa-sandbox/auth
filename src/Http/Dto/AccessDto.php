@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Dto;
 
+use App\Security\Permissions\CrmPermissions;
 use Symfony\Component\Validator\Constraints as Assert;
 
 final readonly class AccessDto
@@ -28,20 +29,11 @@ final readonly class AccessDto
         return (bool) $this->api;
     }
 
-    /**
-     * Validate that at least one access type is enabled.
-     */
-    #[Assert\IsTrue(message: 'At least one access type (web or api) must be enabled')]
-    public function hasAccess(): bool
-    {
-        return $this->getWeb() || $this->getApi();
-    }
-
     public function toArray(): array
     {
         return [
-            'web' => $this->getWeb(),
-            'api' => $this->getApi(),
+            CrmPermissions::ACCESS_WEB => $this->getWeb(),
+            CrmPermissions::ACCESS_API => $this->getApi(),
         ];
     }
 }

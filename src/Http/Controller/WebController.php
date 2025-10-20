@@ -6,10 +6,13 @@ namespace App\Http\Controller;
 
 use App\Http\Dto\SetUserPermissionsRequestDto;
 use App\Http\Response\ApiResponse;
+use App\Security\AuthenticatedUserProviderInterface;
 use App\Security\Roles;
+use App\Service\CrmTokenService;
 use App\Service\UsersService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -57,5 +60,36 @@ readonly class WebController
     public function getUserRoles(Request $request): ApiResponse
     {
         return ApiResponse::success(Roles::ALL_ROLES);
+    }
+
+    #[Route('/user/{id}/token', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function generateCrmToken(
+        RateLimiterFactory $crmTokenPerUserLimiter,
+        CrmTokenService $crmTokenService,
+        AuthenticatedUserProviderInterface $userProvider,
+        int $id,
+    ): ApiResponse {
+        $currentUser = $userProvider->getCurrentUser();
+
+        // Check if current user is requesting token for themselves or is an admin
+        if ($currentUser->getId() !== $id && !$userProvider->isAdmin()) {
+            return ApiResponse::error('Forbidden', status: Response::HTTP_FORBIDDEN);
+        }
+
+        // Rate limiting per user
+        $limiter = $crmTokenPerUserLimiter->create((string) $id);
+        $limit = $limiter->consume();
+        if (!$limit->isAccepted()) {
+            return ApiResponse::error('Too many token generation requests', status: Response::HTTP_TOO_MANY_REQUESTS);
+        }
+
+        $tokenDto = $crmTokenService->generateExchangeToken($id);
+
+        return ApiResponse::success([
+            'token' => $tokenDto->getToken(),
+            'expires_at' => $tokenDto->getExpiresAt()->format(DATE_ATOM),
+            'ttl' => $tokenDto->getTtl(),
+        ]);
     }
 }

@@ -52,7 +52,7 @@ class JwtAuthenticator extends AbstractAuthenticator
         }
 
         // Ensure id and email exist in token
-        if (!isset($data['id']) || !isset($data['username'])) {
+        if (!isset($data['user_id']) || !isset($data['username'])) {
             throw new AuthenticationException('Invalid JWT token: id or email not found');
         }
 

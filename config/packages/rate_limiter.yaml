@@ -17,3 +17,21 @@ framework:
       limit: 60
       interval: '1 minute'
       cache_pool: cache.rate_limiter
+
+    crm_token_per_user:
+      policy: sliding_window
+      limit: 10
+      interval: '1 minute'
+      cache_pool: cache.rate_limiter
+
+    crm_exchange_per_ip:
+      policy: sliding_window
+      limit: 10
+      interval: '1 minute'
+      cache_pool: cache.rate_limiter
+
+    crm_refresh_per_ip:
+      policy: sliding_window
+      limit: 60
+      interval: '1 minute'
+      cache_pool: cache.rate_limiter

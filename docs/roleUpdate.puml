@@ -1,20 +1,21 @@
 @startuml
-title Role Update Flow with Transactional Rollback (Kafka Failure)
+title Permission Update Flow with Transactional Rollback (Kafka Failure)
 
 actor Admin as A
 participant "Auth API" as API
-participant "AuthService" as S
-database "MySQL (Users)" as DB
+participant "UsersService" as S
+database "MySQL (user_permissions)" as DB
 queue "Kafka" as K
 
-A -> API : PUT /web/users/{id}/roles [new roles]
-API -> S : updateUserRoles(userId, roles)
+A -> API : PUT /web/user/{id}/permissions \n [new permissions]
+API -> S : setNewPermissions(userId, permissions)
 
 == Transaction Begin ==
-S -> DB : UPDATE user_roles SET roles = :new_roles \n WHERE user_id = :id
+S -> DB : DELETE FROM user_permissions WHERE user_id = :id
+S -> DB : INSERT INTO user_permissions \n (user_id, scope, entity, access, actions)
 DB --> S : OK
 
-S -> K : Publish event \n "user.roles.updated" (userId, roles)
+S -> K : Publish event \n "user.permissions.changed" \n {user_id, changed_at}
 alt Publish success
     S -> DB : COMMIT
     S --> A : 200 OK { success: true }
@@ -25,7 +26,7 @@ end
 == Transaction End ==
 
 note over S, K
-The AuthService ensures atomicity:
- role changes are only committed if Kafka publish succeeds.
+The UsersService ensures atomicity:
+ permission changes are only committed if Kafka publish succeeds.
 end note
 @enduml

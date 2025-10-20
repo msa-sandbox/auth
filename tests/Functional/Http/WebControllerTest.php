@@ -75,7 +75,7 @@ final class WebControllerTest extends WebTestCase
     {
         $user = $this->createUser('test_'.strtolower($role).'@example.com', [$role]);
 
-        return $this->jwtManager->createFromPayload($user, ['id' => $user->getId()]);
+        return $this->jwtManager->createFromPayload($user, ['user_id' => $user->getId()]);
     }
 
     public function testGetUsersRequiresAuthentication(): void

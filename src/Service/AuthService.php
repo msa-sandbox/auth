@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Security;
+namespace App\Service;
 
 use App\Entity\RefreshSession;
 use App\Entity\User;
 use App\Exceptions\AuthException;
+use App\Metrics\MetricsCollector;
 use App\Repository\RefreshSessionRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
-use App\Security\Dto\AuthResultDto;
+use App\Service\Dto\AuthResultDto;
 use DateTimeImmutable;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -24,6 +25,7 @@ readonly class AuthService
         private RefreshSessionRepositoryInterface $refreshSessionRepository,
         private UserPasswordHasherInterface $passwordHasher,
         private ParameterBagInterface $params,
+        private MetricsCollector $metricsCollector,
     ) {
     }
 
@@ -35,9 +37,17 @@ readonly class AuthService
         /** @var User|null $user */
         $user = $this->userRepository->findOneBy(['email' => $email]);
 
-        if (!$user || !$this->passwordHasher->isPasswordValid($user, $password)) {
+        if (!$user) {
+            $this->metricsCollector->incrementLoginAttempts('failure', 'user_not_found');
             throw new AuthException('Invalid credentials');
         }
+
+        if (!$this->passwordHasher->isPasswordValid($user, $password)) {
+            $this->metricsCollector->incrementLoginAttempts('failure', 'wrong_password');
+            throw new AuthException('Invalid credentials');
+        }
+
+        $this->metricsCollector->incrementLoginAttempts('success');
 
         return $this->createTokens($user);
     }
@@ -86,7 +96,12 @@ readonly class AuthService
     public function createTokens(User $user): AuthResultDto
     {
         // Create JWT
-        $accessToken = $this->jwt->createFromPayload($user, ['id' => $user->getId()]);
+        // By default symfony is using user.email as a "username" claim.
+        // I also want to have user.id within the token payload,
+        // since it is easier to watch it in another service.
+        $accessToken = $this->jwt->createFromPayload($user, [
+            'user_id' => $user->getId(),
+        ]);
 
         // Create a refresh session
         $refreshId = Uuid::v4()->toRfc4122();

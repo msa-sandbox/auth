@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Dto;
 
+use App\Security\Permissions\CrmPermissions;
 use Symfony\Component\Validator\Constraints as Assert;
 
 final readonly class SetUserPermissionsRequestDto
@@ -12,7 +13,7 @@ final readonly class SetUserPermissionsRequestDto
 
     public function __construct(mixed $data)
     {
-        $crmData = is_array($data) ? ($data['crm'] ?? null) : null;
+        $crmData = is_array($data) ? ($data[CrmPermissions::SCOPE] ?? null) : null;
 
         // Create nested DTO immediately so #[Assert\Valid] can validate it
         $this->crm = is_array($crmData)
@@ -36,7 +37,7 @@ final readonly class SetUserPermissionsRequestDto
     public function toArray(): array
     {
         return [
-            'crm' => $this->getCrm()->toArray(),
+            CrmPermissions::SCOPE => $this->getCrm()->toArray(),
         ];
     }
 }

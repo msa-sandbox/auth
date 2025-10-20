@@ -1,0 +1,87 @@
+@startuml
+title CRM Authentication Flow with Token Exchange and Rotation
+
+actor "User (Browser)" as U
+participant "Frontend App" as F
+participant "Auth Service" as AUTH
+participant "CRM System" as CRM
+database "MySQL" as DB
+
+== 1. User Authorization (Exchange Token Generation) ==
+U -> F : Click "Generate"
+F -> AUTH : POST /web/user/{id}/token\n[JWT in header]
+AUTH -> DB : Generate exchange token\nHash = SHA256(uuid.random_bytes)\nTTL = 10 minutes, one-time use
+DB --> AUTH : OK
+AUTH --> F : {token, expires_at, ttl: 600}
+F --> U : Show token (or redirect to CRM)
+
+== 2. CRM Token Exchange (Bootstrap Authentication) ==
+CRM -> AUTH : POST /api/exchange-token\n{grant_type: "exchange_token",\nexchange_token: "uuid.random..."}
+AUTH -> DB : Validate token hash\nCheck: not used, not expired
+DB --> AUTH : Valid, return User
+AUTH -> DB : Mark exchange token as used
+AUTH -> DB : Create CRM refresh token\njti = uuid, TTL = 30 days
+DB --> AUTH : OK
+
+AUTH --> CRM : {access_token: "eyJhbGc...",\nrefresh_token: "eyJhbGc...",\ntoken_type: "Bearer",\nexpires_in: 86400,\nrefresh_expires_in: 2592000}
+CRM -> CRM : Store both tokens locally
+
+note over CRM
+  CRM now has:
+  - access_token for API requests
+  - refresh_token for renewal
+end note
+
+== 3. CRM API Requests ==
+CRM -> AUTH : GET /web/users\nAuthorization: Bearer {access_token}
+AUTH --> CRM : User data
+
+note over CRM
+  After 1 hour, access_token expires
+end note
+
+== 4. Token Refresh (Rotation) ==
+CRM -> AUTH : POST /api/refresh\n{grant_type: "refresh_token",\nrefresh_token: "eyJhbGc..."}
+AUTH -> AUTH : Parse JWT → extract jti
+AUTH -> DB : Find refresh token by jti\nValidate: not revoked, not expired
+DB --> AUTH : Valid token, return User
+
+AUTH -> DB : Revoke old refresh token (jti)
+AUTH -> DB : Create NEW refresh token\nnew_jti = uuid, TTL = 30 days
+DB --> AUTH : OK
+
+AUTH --> CRM : {access_token: "eyJhbGc..." (NEW),\nrefresh_token: "eyJhbGc..." (NEW),\ntoken_type: "Bearer",\nexpires_in: 3600,\nrefresh_expires_in: 2592000}
+CRM -> CRM : Replace old tokens with new ones
+
+note over AUTH, DB
+  Token Rotation Security:
+  - Old refresh token is immediately revoked
+  - If replay attack uses old token → rejected
+  - Only the latest refresh token is valid
+end note
+
+== Security Features ==
+note over AUTH
+  **OAuth 2.0 Compliance:**
+  - grant_type parameter validation
+  - Standard response format (token_type, expires_in)
+  - Custom grant: "exchange_token"
+  - Standard grant: "refresh_token"
+
+  **Exchange Token:**
+  - SHA-256 hash stored (not plaintext)
+  - One-time use (marked as used after exchange)
+  - 5-minute TTL (minimal exposure window)
+
+  **Refresh Token:**
+  - JWT with jti claim (token ID)
+  - Stateful (jti stored in DB for revocation)
+  - Rotate-on-use (old token revoked on refresh)
+  - 30-day TTL (long-lived but revocable)
+
+  **Rate Limiting:**
+  - Exchange: 10 req/min per IP
+  - Refresh: 60 req/min per IP
+end note
+
+@enduml

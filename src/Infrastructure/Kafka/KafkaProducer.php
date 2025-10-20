@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Kafka;
 
+use App\Metrics\MetricsCollector;
 use Psr\Log\LoggerInterface;
 use RdKafka\Conf;
 use RdKafka\Producer;
@@ -20,6 +21,7 @@ readonly class KafkaProducer
         string $brokers,
         string $topicName,
         private LoggerInterface $logger,
+        private MetricsCollector $metricsCollector,
     ) {
         $conf = new Conf();
         $conf->set('metadata.broker.list', $brokers);
@@ -48,6 +50,8 @@ readonly class KafkaProducer
 
             $this->logger->info('Kafka message sent', ['payload' => $payload]);
         } catch (Throwable $e) {
+            $this->metricsCollector->incrementKafkaFailures();
+
             $this->logger->error('Kafka publish failed', [
                 'error' => $e->getMessage(),
                 'payload' => $payload,

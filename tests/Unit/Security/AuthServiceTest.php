@@ -7,11 +7,14 @@ namespace App\Tests\Unit\Security;
 use App\Entity\RefreshSession;
 use App\Entity\User;
 use App\Exceptions\AuthException;
+use App\Metrics\MetricsCollector;
 use App\Repository\RefreshSessionRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
-use App\Security\AuthService;
+use App\Service\AuthService;
 use DateTimeImmutable;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use Prometheus\CollectorRegistry;
+use Prometheus\Storage\InMemory;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -23,6 +26,7 @@ class AuthServiceTest extends KernelTestCase
     private $session;
     private $hasher;
     private $params;
+    private $metrics;
     private AuthService $auth;
 
     protected function setUp(): void
@@ -33,13 +37,18 @@ class AuthServiceTest extends KernelTestCase
         $this->hasher = $this->createMock(UserPasswordHasherInterface::class);
         $this->params = $this->createMock(ParameterBagInterface::class);
 
+        // Create real MetricsCollector with in-memory registry for testing
+        $collectorRegistry = new CollectorRegistry(new InMemory());
+        $this->metrics = new MetricsCollector();
+        $this->metrics->init('auth_test', $collectorRegistry);
+
         // Mock JWT TTL parameter
         $this->params
             ->method('get')
             ->with('lexik_jwt_authentication.token_ttl')
             ->willReturn(3600);
 
-        $this->auth = new AuthService($this->jwt, $this->users, $this->session, $this->hasher, $this->params);
+        $this->auth = new AuthService($this->jwt, $this->users, $this->session, $this->hasher, $this->params, $this->metrics);
     }
 
     public function testLoginSuccess(): void

@@ -7,7 +7,10 @@ namespace App\Service;
 use App\Entity\User;
 use App\Entity\UserPermission;
 use App\Repository\UserPermissionRepositoryInterface;
+use App\Security\Permissions\CrmPermissions;
+use App\Security\Permissions\Permissions;
 use Doctrine\ORM\EntityManagerInterface;
+use LogicException;
 
 readonly class UserPermissionService
 {
@@ -33,11 +36,9 @@ readonly class UserPermissionService
     {
         foreach ($newPermissions as $scope => $data) {
             // Only process CRM scope for now
-            if ('crm' !== $scope) {
+            if (CrmPermissions::SCOPE !== $scope) {
                 continue;
             }
-
-            $access = $this->resolveAccessType($data['access']);
 
             // Delete all existing permissions for this user and scope
             $this->permissionRepository->deleteBy([
@@ -45,16 +46,43 @@ readonly class UserPermissionService
                 'scope' => $scope,
             ]);
 
+            // If both access flags are false, user has no access - just delete old permissions and skip
+            if (!$data['access'][CrmPermissions::ACCESS_WEB] && !$data['access'][CrmPermissions::ACCESS_API]) {
+                continue;
+            }
+
+            // If access is granted but permissions are empty - this is an error
+            if (empty($data['permissions'])) {
+                throw new LogicException('Cannot grant access without any permissions');
+            }
+
+            // Check if at least one entity has read permission
+            $hasAnyReadPermission = false;
+            foreach ($data['permissions'] as $entity => $actions) {
+                $enabledActions = $this->getEnabledActions($actions);
+                $actionsWithHierarchy = $this->applyPermissionHierarchy($enabledActions);
+
+                if (in_array(CrmPermissions::READ, $actionsWithHierarchy, true)) {
+                    $hasAnyReadPermission = true;
+                    break;
+                }
+            }
+
+            if (!$hasAnyReadPermission) {
+                throw new LogicException('At least one entity must have read permission when access is granted');
+            }
+
+            $access = $this->resolveAccessType($data['access']);
+
             // Insert new permissions for each entity
             foreach ($data['permissions'] as $entity => $actions) {
                 $enabledActions = $this->getEnabledActions($actions);
+                $actionsWithHierarchy = $this->applyPermissionHierarchy($enabledActions);
 
-                // If 'read' is not allowed, skip this entity entirely
-                if (!in_array('read', $enabledActions, true)) {
+                // If 'read' is not allowed (even after hierarchy), skip this entity entirely
+                if (!in_array(CrmPermissions::READ, $actionsWithHierarchy, true)) {
                     continue;
                 }
-
-                $actionsWithHierarchy = $this->applyPermissionHierarchy($enabledActions);
 
                 $permission = $this->createPermission($user, $scope, $access, $entity, $actionsWithHierarchy);
                 $this->em->persist($permission);
@@ -74,11 +102,11 @@ readonly class UserPermissionService
      */
     private function resolveAccessType(array $accessFlags): string
     {
-        if ($accessFlags['web'] && $accessFlags['api']) {
-            return 'all';
+        if ($accessFlags[CrmPermissions::ACCESS_WEB] && $accessFlags[CrmPermissions::ACCESS_API]) {
+            return CrmPermissions::ACCESS_ALL;
         }
 
-        return $accessFlags['web'] ? 'web' : 'api';
+        return $accessFlags[CrmPermissions::ACCESS_WEB] ? CrmPermissions::ACCESS_WEB : CrmPermissions::ACCESS_API;
     }
 
     /**
@@ -109,17 +137,17 @@ readonly class UserPermissionService
         $result = $actions;
 
         // If 'write' is present, ensure 'read' is included
-        if (in_array('write', $actions, true) && !in_array('read', $actions, true)) {
-            $result[] = 'read';
+        if (in_array(CrmPermissions::WRITE, $actions, true) && !in_array(CrmPermissions::READ, $actions, true)) {
+            $result[] = CrmPermissions::READ;
         }
 
         // If 'delete' is present, ensure 'write' and 'read' are included
-        if (in_array('delete', $actions, true)) {
-            if (!in_array('write', $actions, true)) {
-                $result[] = 'write';
+        if (in_array(CrmPermissions::DELETE, $actions, true)) {
+            if (!in_array(CrmPermissions::WRITE, $actions, true)) {
+                $result[] = CrmPermissions::WRITE;
             }
-            if (!in_array('read', $actions, true)) {
-                $result[] = 'read';
+            if (!in_array(CrmPermissions::READ, $actions, true)) {
+                $result[] = CrmPermissions::READ;
             }
         }
 
@@ -150,5 +178,95 @@ readonly class UserPermissionService
             ->setAccess($access)
             ->setEntity($entity)
             ->setAction($actions);
+    }
+
+    /**
+     * Get all permissions for a user.
+     *
+     * Returns a structure with all possible permissions (from Permissions::all())
+     * where flags are set to true for permissions the user has in DB.
+     *
+     * @param User $user
+     *
+     * @return array
+     */
+    public function getUserPermissions(User $user): array
+    {
+        // Get template with all possible permissions (all flags set to false)
+        $permissions = Permissions::all();
+
+        // Fetch what is set within DB
+        $userPermissions = $this->permissionRepository->findBy(['user' => $user]);
+
+        // Map DB records into the permissions structure
+        return $this->mapUserPermissions($permissions, $userPermissions);
+    }
+
+    /**
+     * Map UserPermission entities into permissions array structure.
+     *
+     * Takes a template array and applies user permissions from DB,
+     * setting flags to true where user has permissions.
+     *
+     * @param array $permissions Template array with all possible permissions
+     * @param UserPermission[] $userPermissions User's permissions from DB
+     *
+     * @return array Permissions array with user's permissions applied
+     */
+    private function mapUserPermissions(array $permissions, array $userPermissions): array
+    {
+        /** @var UserPermission $item */
+        foreach ($userPermissions as $item) {
+            $scope = $item->getScope();
+
+            // Apply access flags (web/api or both)
+            $permissions[$scope]['access'] = $this->applyAccessFlags(
+                $permissions[$scope]['access'],
+                $item->getAccess()
+            );
+
+            // Apply entity permissions (read, write, delete, etc.)
+            $permissions[$scope]['permissions'][$item->getEntity()] = $this->applyEntityPermissions(
+                $permissions[$scope]['permissions'][$item->getEntity()],
+                $item->getAction()
+            );
+        }
+
+        return $permissions;
+    }
+
+    /**
+     * Apply access flags based on stored access type.
+     *
+     * @param array $currentAccess Current access flags ['web' => bool, 'api' => bool]
+     * @param string $accessType Stored access type: 'all', 'web', or 'api'
+     *
+     * @return array Updated access flags
+     */
+    private function applyAccessFlags(array $currentAccess, string $accessType): array
+    {
+        if ('all' === $accessType) {
+            return ['web' => true, 'api' => true];
+        }
+
+        $currentAccess[$accessType] = true;
+
+        return $currentAccess;
+    }
+
+    /**
+     * Apply entity permissions (read, write, delete, etc.).
+     *
+     * @param array $currentPermissions Current permissions ['read' => bool, 'write' => bool, ...]
+     * @param array $allowedActions Actions user is allowed to perform
+     *
+     * @return array Updated permissions
+     */
+    private function applyEntityPermissions(array $currentPermissions, array $allowedActions): array
+    {
+        return array_replace(
+            $currentPermissions,
+            array_fill_keys($allowedActions, true)
+        );
     }
 }

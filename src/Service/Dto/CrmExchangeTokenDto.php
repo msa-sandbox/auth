@@ -2,28 +2,22 @@
 
 declare(strict_types=1);
 
-namespace App\Security\Dto;
+namespace App\Service\Dto;
 
 use DateTimeImmutable;
 
-final readonly class AuthResultDto
+final readonly class CrmExchangeTokenDto
 {
     public function __construct(
-        private string $accessToken,
-        private string $refreshId,
+        private string $token,
         private DateTimeImmutable $expiresAt,
         private int $ttl,
     ) {
     }
 
-    public function getAccessToken(): string
+    public function getToken(): string
     {
-        return $this->accessToken;
-    }
-
-    public function getRefreshId(): string
-    {
-        return $this->refreshId;
+        return $this->token;
     }
 
     public function getExpiresAt(): DateTimeImmutable

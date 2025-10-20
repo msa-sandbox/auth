@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Integrational\Infrastructure;
 
 use App\Infrastructure\Kafka\KafkaProducer;
+use App\Metrics\MetricsCollector;
 use DateTimeImmutable;
+use Prometheus\CollectorRegistry;
+use Prometheus\Storage\InMemory;
 use Psr\Log\NullLogger;
 use RdKafka\Conf;
 use RdKafka\KafkaConsumer;
@@ -53,7 +56,9 @@ final class KafkaIntegrationTest extends KernelTestCase
         ];
 
         // Produce a message into Kafka
-        $producer = new KafkaProducer($brokers, self::TOPIC, new NullLogger());
+        $collectorRegistry = new CollectorRegistry(new InMemory());
+        $metricsCollector = new MetricsCollector($collectorRegistry);
+        $producer = new KafkaProducer($brokers, self::TOPIC, new NullLogger(), $metricsCollector);
         $producer->send($payload);
 
         // Configure Kafka consumer to read from the same topic

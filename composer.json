@@ -11,7 +11,7 @@
     "artprima/prometheus-metrics-bundle": "^1.20",
     "doctrine/dbal": "^3.10.3",
     "doctrine/doctrine-bundle": "^2.18",
-    "doctrine/doctrine-migrations-bundle": "^3.4.3",
+    "doctrine/doctrine-migrations-bundle": "^3.5.0",
     "doctrine/orm": "^3.5.2",
     "enqueue/rdkafka": "^0.10.26",
     "lexik/jwt-authentication-bundle": "^3.1.1",
@@ -31,9 +31,9 @@
     "symfony/yaml": "7.3.*"
   },
   "require-dev": {
-    "doctrine/doctrine-fixtures-bundle": "^4.2",
+    "doctrine/doctrine-fixtures-bundle": "^4.3",
     "fakerphp/faker": "^1.24.1",
-    "friendsofphp/php-cs-fixer": "^3.88.2",
+    "friendsofphp/php-cs-fixer": "^3.89.0",
     "kwn/php-rdkafka-stubs": "^2.2.1",
     "phpstan/phpstan": "^2.1.31",
     "phpunit/phpunit": "^11.5.42",

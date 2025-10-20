@@ -47,7 +47,7 @@ class JwtAuthenticatorTest extends KernelTestCase
             ->expects(self::once())
             ->method('parse')
             ->with('valid.jwt')
-            ->willReturn(['id' => 123, 'username' => 'user@example.com']);
+            ->willReturn(['user_id' => 123, 'username' => 'user@example.com']);
 
         $passport = $this->authenticator->authenticate($request);
 
