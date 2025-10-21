@@ -1,0 +1,9 @@
+services:
+  # Override KafkaProducer with a stub for testing
+  App\Infrastructure\Kafka\KafkaProducer:
+    class: App\Tests\Stub\StubKafkaProducer
+    arguments:
+      $brokers: 'stub'
+      $topicName: 'stub'
+      $logger: '@Psr\Log\LoggerInterface'
+      $metricsCollector: '@App\Metrics\MetricsCollector'
