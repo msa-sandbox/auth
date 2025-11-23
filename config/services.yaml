@@ -33,6 +33,10 @@ services:
       - { name: kernel.event_listener, event: kernel.view }
 
   # Kafka
+  App\Api\Controller\HealthController:
+    public: true
+    arguments:
+      $brokers: '%env(KAFKA_BROKERS)%'
   App\Infrastructure\Kafka\KafkaProducer:
     arguments:
       $brokers: '%env(KAFKA_BROKERS)%'

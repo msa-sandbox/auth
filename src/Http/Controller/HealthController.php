@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controller;
 
-use App\Infrastructure\Kafka\KafkaProducer;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use RdKafka\Conf;
+use RdKafka\Producer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -20,7 +21,7 @@ readonly class HealthController
 {
     public function __construct(
         private Connection $db,
-        private KafkaProducer $kafkaProducer,
+        private string $brokers,
     ) {
     }
 
@@ -51,10 +52,11 @@ readonly class HealthController
         // 2. Check Kafka
         try {
             // Just check broker without any topic verification
-            $this->kafkaProducer->send([
-                'event' => 'health.check',
-                'timestamp' => time(),
-            ], 500);
+            $conf = new Conf();
+            $conf->set('metadata.broker.list', $this->brokers);
+
+            $producer = new Producer($conf);
+            $producer->getMetadata(false, null, 500);
         } catch (Throwable $exception) {
             $status['status'] = self::STATUS_DOWN;
             $status['checks']['kafka'] = self::STATUS_DOWN;

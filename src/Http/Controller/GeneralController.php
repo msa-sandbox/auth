@@ -18,7 +18,7 @@ readonly class GeneralController
         return new JsonResponse(['message' => 'Hi. Nothing here']);
     }
 
-    // We are not going to expose any endpoint, but the browser will argue about span within metrics
+    // We are not going to expose any endpoint, but the browser will argue about favicon and span within metrics
     #[Route('/favicon.ico', name: 'app_favicon', methods: ['GET'])]
     public function favicon(): Response
     {

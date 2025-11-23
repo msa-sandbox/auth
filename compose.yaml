@@ -41,7 +41,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3350:3306"
+      - "3351:3306"
     volumes:
       - db_data:/var/lib/mysql
 
@@ -54,7 +54,7 @@ services:
       MYSQL_USER: app
       MYSQL_PASSWORD: app
     ports:
-      - "3351:3306"
+      - "3361:3306"
     tmpfs:
       - /var/lib/mysql
 
