@@ -12,7 +12,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('PUBLIC_ACCESS')]
 readonly class GeneralController
 {
-    #[Route('/', methods: ['GET'])]
+    #[Route('/', name: 'root', methods: ['GET'])]
     public function root(): JsonResponse
     {
         return new JsonResponse(['message' => 'Hi. Nothing here']);

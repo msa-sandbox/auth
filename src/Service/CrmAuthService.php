@@ -100,6 +100,7 @@ readonly class CrmAuthService
         $accessToken = $this->jwt->createFromPayload($user, [
             'user_id' => $user->getId(),
             'permissions' => $permissions,
+            'exp' => (new DateTimeImmutable('+'.self::ACCESS_TOKEN_TTL.' seconds'))->getTimestamp(),
         ]);
 
         // Create refresh JWT with jti

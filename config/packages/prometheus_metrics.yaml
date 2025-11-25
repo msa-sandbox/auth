@@ -9,6 +9,8 @@ artprima_prometheus_metrics:
     - _wdt
     - app_http_health__invoke
     - app_metrics
+    - app_favicon
+    - root
 
   # used to disable default application metrics
   #disable_default_metrics: false

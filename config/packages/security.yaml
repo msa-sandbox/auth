@@ -3,6 +3,8 @@ security:
   password_hashers:
     Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
   # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
+  # We are using stateless auth via JWT tokens, but provider is required here anyway
+  # to load User entity from database for every request
   providers:
     app_user_provider:
       entity:
