@@ -8,9 +8,8 @@ volumes:
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: docker/php.Dockerfile
+    image: alslob/msa-sandbox:php-base-8.2
+    working_dir: /var/www/app
     volumes:
       - .:/var/www/app
     networks:
