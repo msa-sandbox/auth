@@ -2,18 +2,20 @@
 FROM alslob/msa-sandbox:php-base-8.2 AS base
 
 # Set working directory
-WORKDIR /var/www/app
+WORKDIR /origin
 
-# Copy composer files and install dependencies
-COPY composer.json composer.lock ./
+# Copy composer files first
+COPY --chown=appuser:appuser ../composer.json ../composer.lock ./
+
+# Install PHP dependencies
 RUN composer install --no-scripts --no-progress --no-interaction \
     --prefer-dist --no-dev --optimize-autoloader
 
 # Copy the rest of the project
-COPY --chown=appuser:appuser . .
+COPY --chown=appuser:appuser ../ .
 
-# Switch to non-root user
-USER appuser
+# Stay root (so initContainer can copy files)
+USER root
 
-# Default command
-CMD ["php-fpm"]
+# No application start — this is source image
+CMD ["true"]
