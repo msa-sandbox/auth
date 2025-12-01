@@ -32,6 +32,12 @@ services:
     tags:
       - { name: kernel.event_listener, event: kernel.view }
 
+  # CORS env is required to this listener
+  App\Http\EventListener\AntiCsrfForRefreshSubscriber:
+    arguments:
+      $allowedOriginPattern: '%env(CORS_ALLOW_ORIGIN)%'
+
+
   # Kafka
   App\Http\Controller\HealthController:
     public: true

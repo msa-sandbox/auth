@@ -16,8 +16,12 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  *  with attached cookies (refresh_id).
  */
 #[AsEventListener(event: RequestEvent::class, method: 'onKernelRequest')]
-final class AntiCsrfForRefreshSubscriber
+final readonly class AntiCsrfForRefreshSubscriber
 {
+    public function __construct(
+        private string $allowedOriginPattern,
+    ) {}
+
     public function onKernelRequest(RequestEvent $event): void
     {
         $request = $event->getRequest();
@@ -25,10 +29,7 @@ final class AntiCsrfForRefreshSubscriber
         if ($request->isMethod('POST') && preg_match('#^/web/(refresh|logout)$#', $request->getPathInfo())) {
             $origin = $request->headers->get('Origin') ?? $request->headers->get('Referer');
 
-            if (
-                !$origin
-                || !preg_match('#^https?://(localhost(:\d+)?|127\.0\.0\.1(:\d+)?|your\.prod\.domain)$#i', $origin)
-            ) {
+            if (!$origin || !preg_match('#' . $this->allowedOriginPattern . '#i', $origin)) {
                 throw new AccessDeniedHttpException('Invalid origin');
             }
 
